@@ -2,7 +2,7 @@
 echo usage: pass gpu id list as param, split with ,
 echo eg: source run_main.sh 3 snips OR source run_main.sh 3 ner
 
-echo log file path ../result/
+echo log file path /mnt/sda/f/shdata/result
 
 
 gpu_list=$1
@@ -144,9 +144,9 @@ label_trans_normalizer=none
 
 
 # ======= default path (for quick distribution) ==========
-bert_base_uncased=/users4/yklai/corpus/BERT/pytorch/uncased_L-12_H-768_A-12/
-bert_base_uncased_vocab=/users4/yklai/corpus/BERT/pytorch/uncased_L-12_H-768_A-12/vocab.txt
-base_data_dir=/users4/yklai/code/Dialogue/FewShot/release/baseline+pw_data/ # acl20 data
+bert_base_uncased=/mnt/sda/f/shdata/bert-base-uncased/
+bert_base_uncased_vocab=/mnt/sda/f/shdata/bert-base-uncased/vocab.txt
+base_data_dir=/mnt/sda/f/shdata/ACL2020data/ # acl20 data
 
 
 echo [START] set jobs on dataset [ ${dataset_lst[@]} ] on gpu [ ${gpu_list} ]
@@ -245,7 +245,7 @@ do
                                                             --label_trans_scale_r ${trans_scale_r} \
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
-                                                            --load_feature > ../result/${model_name}.DATA.${file_mark}.log
+                                                            --load_feature > /mnt/sda/f/shdata/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}
                                                         echo Task:  ${file_mark}
