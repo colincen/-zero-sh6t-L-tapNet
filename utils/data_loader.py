@@ -104,7 +104,7 @@ class FewShotRawDataLoader(RawDataLoaderBase):
 
     def batch2data_items(self, batch: dict) -> (List[DataItem], List[DataItem]):
         support_data_items = self.get_data_items(parts=batch['support'])
-        test_data_items = self.get_data_items(parts=batch['query'])
+        test_data_items = self.get_data_items(parts=batch['batch'])
         return support_data_items, test_data_items
 
     def get_data_items(self, parts: dict) -> List[DataItem]:
