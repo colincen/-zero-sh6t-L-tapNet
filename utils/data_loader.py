@@ -14,7 +14,7 @@ class RawDataLoaderBase:
 
 
 DataItem = collections.namedtuple("DataItem", ["seq_in", "seq_out", "label"])
-
+ZeroShotDataItem = collections.namedtuple("ZeroShotDataItem", ["seq_in", "seq_out", "slot_names", "slot_vals"])
 
 class FewShotExample(object):
     """  Each few-shot example is a pair of (one query example, support set) """
@@ -124,3 +124,61 @@ class FewShotRawDataLoader(RawDataLoaderBase):
     #         data_item = DataItem(text=text, label=label, wp_text=wp_text, wp_label=wp_label, wp_mark=wp_mark)
     #         data_item_lst.append(data_item)
     #     return data_item_lst
+
+
+class ZeroShotExample(object):
+    def __init__(
+        self,
+        gid: int,
+        InputItem: List[ZeroShotDataItem]
+    ):
+        self.gid = gid
+        self.input_item = InputItem
+    
+    def __str__(self):
+        return self.__repr__()
+    
+    def __repr__(self):
+        return 'gid:{}\n\tutterance:{}\n\tlabels:{}\n\tslot_names:{}\n\tslot_vals:{}\n\t'.format(
+            self.gid,
+            self.input_item.seq_in,
+            self.input_item.seq_out,
+            self.input_item.slot_names,
+            self.input_item.slot_vals,
+        )
+
+
+class ZeroShotRawDataLoader(RawDataLoaderBase):
+    def __init__(self, opt):
+        super(ZeroShotRawDataLoader, self).__init__()
+        self.opt = opt
+    def load_data(self, path: str):
+        with open(path, 'r') as reader:
+            raw_data = json.load(reader)
+            examples = self.raw_data2examples(raw_data)
+        return examples
+
+    
+    def raw_data2examples(self, raw_data: dict):
+        data_item_lst = self.get_data_items(raw_data)
+        examples = []
+        for idx, data_item in enumerate(data_item_lst):
+            gid = len(examples)
+            example = ZeroShotExample(
+                gid=gid,
+                InputItem=data_item
+            )
+            examples.append(example)
+        return examples
+
+    def get_data_items(self, data):
+        data_item_lst = []
+        for seq_in, seq_out, slot_names, slot_vals in zip(data['seq_in'], data['seq_out'], data['slots'], data['slot_vals']):
+            data_item = ZeroShotDataItem(seq_in=seq_in, seq_out=seq_out, slot_names=slot_names, slot_vals=slot_vals)
+            data_item_lst.append(data_item)
+        return data_item_lst
+
+if __name__ == "__main__":
+    z = ZeroShotRawDataLoader(None)
+    examples = z.load_data('/mnt/sda/f/shdata/zero-shot-dataset/snips_train_1.json')
+    print(examples[0])
