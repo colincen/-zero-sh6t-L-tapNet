@@ -39,7 +39,7 @@ def basic_args(parser):
                        help="path to embedding cache dir. if use pytorch nlp, use this path to avoid downloading")
 
     group = parser.add_argument_group('Function')
-    parser.add_argument("--task", default='sc', choices=['sl', 'sc'],
+    parser.add_argument("--task", default='sc', choices=['sl', 'sc', 'zero-shot'],
                         help="Task: sl:sequence labeling, sc:single label sent classify")
     group.add_argument('--allow_override', default=False, action='store_true', help='allow override experiment file')
     group.add_argument('--load_feature', default=False, action='store_true', help='load feature from file')
@@ -139,8 +139,9 @@ def model_args(parser):
     group.add_argument("--projection_layer", default='none', type=str,
                        choices=['1-mlp', '2-mlp', 'mlp-relu', 'lstm', 'none'], help="select projection layer type")
     group.add_argument("--context_emb", default='bert', type=str,
-                       choices=['bert', 'elmo', 'glove', 'raw', 'sep_bert', 'electra'],
+                       choices=['bert', 'elmo', 'glove', 'raw', 'sep_bert', 'electra', 'bilstm'],
                        help="select word representation type")
+    group.add_argument("--hidden_size", default=300, type=int, help='bilstm hidden size')
     group.add_argument("--similarity", default='dot', type=str,
                        choices=['cosine', 'dot', 'bi-affine', 'l2'], help="Metric for evaluating 2 tokens.")
     group.add_argument("--emb_dim", default=64, type=int, help="Embedding dimension for baseline")

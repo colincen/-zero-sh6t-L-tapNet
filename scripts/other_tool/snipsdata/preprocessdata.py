@@ -75,7 +75,7 @@ def div_7_src_dev_tgt(domain: dict):
         srcs.append(tmp)
     for i in range(1, 8):
         trainpath = new_dir + 'snips_train_%d.json' % (i)
-        devpath = new_dir + 'snips_dev_%d.json' % (i)
+        devpath = new_dir + 'snips_valid_%d.json' % (i)
         testpath = new_dir + 'snips_test_%d.json' % (i)
 
 

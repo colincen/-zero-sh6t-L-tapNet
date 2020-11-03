@@ -36,6 +36,17 @@ ModelInput = collections.namedtuple(  # digit features for computation
     ]
 )
 
+ZeroShotItem = collections.namedtuple(
+    "ZeroShotInput",
+    [
+        "tokens",
+        "token_ids",
+        "slot_names",
+        "slot_vals",
+
+    ]
+)
+
 
 class FewShotFeature(object):
     """ pre-processed data for prediction """
@@ -589,12 +600,24 @@ def make_word_dict(all_files: List[str]) -> (Dict[str, int], Dict[int, str]):
     for file in all_files:
         with open(file, 'r') as reader:
             raw_data = json.load(reader)
-        for domain_n, domain in raw_data.items():
+        if 'slots' not in raw_data.keys() or 'slot_vals' not in raw_data.keys():
+            for domain_n, domain in raw_data.items():
             # Notice: the batch here means few shot batch, not training batch
-            for batch_id, batch in enumerate(domain):
-                all_words.extend(batch['support']['seq_ins'])
-                all_words.extend(batch['query']['seq_ins'])
-    word_set = sorted(list(set(flatten(all_words))))  # sort to make embedding id fixed
+                for batch_id, batch in enumerate(domain):
+                    all_words.extend(batch['support']['seq_ins'])
+                    all_words.extend(batch['query']['seq_ins'])
+            word_set = sorted(list(set(flatten(all_words))))  # sort to make embedding id fixed
+
+        else:
+            for line in raw_data['seq_in']:
+                # print(line)
+                all_words.extend(line)
+            for line in raw_data['slots']:
+                all_words.extend(line)
+            word_set = sorted(list(set(all_words)))  # sort to make embedding id fixed
+            
+    
+    # word_set = sorted(list(set(flatten(all_words))))  # sort to make embedding id fixed
     for word in ['[PAD]', '[OOV]'] + word_set:
         word2id[word] = len(word2id)
     id2word = dict([(idx, word) for word, idx in word2id.items()])
@@ -684,4 +707,4 @@ class MyTokenizer(object):
         self.vocab = word2id
 
     def convert_tokens_to_ids(self, tokens):
-        return [self.word2id[token] for token in tokens]
+        return [self.word2id.get(token, default=self.word2id['PAD']) for token in tokens]

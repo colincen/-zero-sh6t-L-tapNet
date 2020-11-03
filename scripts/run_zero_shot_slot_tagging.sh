@@ -11,7 +11,7 @@ gpu_list=$1
 #do_debug=--do_debug
 do_debug=
 
-task=sl
+task=zero-shot
 
 # ======= dataset setting ======
 dataset_lst=($2)
@@ -58,11 +58,11 @@ epoch=4
 # ==== model setting =========
 # ---- encoder setting -----
 
-embedder=bert
-# embedder=bilstm
+# embedder=bert
+embedder=bilstm
 #embedder=sep_bert
-# embedding_dim=300
-# hidden_size=384
+embedding_dim=300
+hidden_size=384
 
 #emission_lst=(mnet)
 emission_lst=(tapnet)
@@ -149,7 +149,7 @@ label_trans_normalizer=none
 # ======= default path (for quick distribution) ==========
 bert_base_uncased=/mnt/sda/f/shdata/bert-base-uncased/
 bert_base_uncased_vocab=/mnt/sda/f/shdata/bert-base-uncased/vocab.txt
-base_data_dir=/mnt/sda/f/shdata/ACL2020data/ # acl20 data
+base_data_dir=/mnt/sda/f/shdata/zero-shot-dataset/ # acl20 data
 
 
 echo [START] set jobs on dataset [ ${dataset_lst[@]} ] on gpu [ ${gpu_list} ]
@@ -183,9 +183,9 @@ do
                                                     for cross_data_id in ${cross_data_id_lst[@]}
                                                     do
                                                         # model names
-                                                        model_name=Tapnet-CDT.dec_${decoder}.enc_${embedder}.ems_${emission}.random_${tap_random_init_r}.proto_${tap_proto_r}.lb_${label_reps}_scl_${ple_scaler}${ple_scale_r}.trans_${transition}.t_scl_${trans_scaler}${trans_scale_r}_${trans_normalizer}.t_i_${trans_init}.${mask_trans}_.sim_${similarity}.lr_${lr}.up_lr_${upper_lr}.bs_${train_batch_size}_${test_batch_size}.sp_b_${grad_acc}.w_ep_${warmup_epoch}.ep_${epoch}${do_debug}
+                                                        model_name=ZeroShot.dec_${decoder}.enc_${embedder}.ems_${emission}.random_${tap_random_init_r}.proto_${tap_proto_r}.lb_${label_reps}_scl_${ple_scaler}${ple_scale_r}.trans_${transition}.t_scl_${trans_scaler}${trans_scale_r}_${trans_normalizer}.t_i_${trans_init}.${mask_trans}_.sim_${similarity}.lr_${lr}.up_lr_${upper_lr}.bs_${train_batch_size}_${test_batch_size}.sp_b_${grad_acc}.w_ep_${warmup_epoch}.ep_${epoch}${do_debug}
 
-                                                        data_dir=${base_data_dir}xval_${dataset}/
+                                                        data_dir=${base_data_dir}
                                                         file_mark=${dataset}.shots_${support_shots}.cross_id_${cross_data_id}.m_seed_${seed}
                                                         train_file_name=${dataset}_train_${cross_data_id}.json
                                                         dev_file_name=${dataset}_valid_${cross_data_id}.json
@@ -197,7 +197,7 @@ do
                                                         echo Task:  ${file_mark}
                                                         echo [CLI]
                                                         export OMP_NUM_THREADS=2  # threads num for each task
-                                                        CUDA_VISIBLE_DEVICES=${gpu_list} python main.py ${do_debug} \
+                                                        CUDA_VISIBLE_DEVICES=${gpu_list} python zero_shot_main.py ${do_debug} \
                                                             --task ${task} \
                                                             --seed ${seed} \
                                                             --do_train \
@@ -221,6 +221,8 @@ do
                                                             --warmup_epoch ${warmup_epoch} \
                                                             --test_batch_size ${test_batch_size} \
                                                             --context_emb ${embedder} \
+                                                            --emb_dim ${embedding_dim} \
+                                                            --hidden_size ${hidden_size} \
                                                             ${use_schema} \
                                                             --label_reps ${label_reps} \
                                                             --projection_layer none \
@@ -248,7 +250,8 @@ do
                                                             --label_trans_scale_r ${trans_scale_r} \
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
-                                                            --load_feature > /mnt/sda/f/shdata/result/${model_name}.DATA.${file_mark}.log
+                                                            --load_feature 
+                                                            # > /mnt/sda/f/shdata/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}
                                                         echo Task:  ${file_mark}
