@@ -90,8 +90,10 @@ def main():
 
     ''' data & feature '''
     data_loader = ZeroShotRawDataLoader(opt)
-    
-    preprocessor = make_preprocessor(opt)
+    train_examples = data_loader.load_data(path=opt.train_path)
+    train_label2id, train_id2label = make_dict(opt, train_examples)
+    print(train_label2id)
+    # preprocessor = make_preprocessor(opt)
     # if opt.do_train:
     #     train_features, train_label2id, train_id2label, dev_features, dev_label2id, dev_id2label = \
     #         get_training_data_and_feature(opt, data_loader, preprocessor)

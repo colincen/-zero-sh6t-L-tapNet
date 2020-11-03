@@ -86,7 +86,7 @@ do_div_emission=-dbt
 #do_div_emission=
 
 #use_schema=--use_schema
-use_schema=
+use_schema=--use_schema
 
 ems_scale_rate_lst=(0.01)
 #ems_scale_rate_lst=(0.01 0.02 0.05 0.005)
@@ -248,7 +248,8 @@ do
                                                             --label_trans_scale_r ${trans_scale_r} \
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
-                                                            --load_feature > /mnt/sda/f/shdata/result/${model_name}.DATA.${file_mark}.log
+                                                            # --load_feature 
+                                                            # > /mnt/sda/f/shdata/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}
                                                         echo Task:  ${file_mark}

@@ -36,17 +36,23 @@ ModelInput = collections.namedtuple(  # digit features for computation
     ]
 )
 
-ZeroShotItem = collections.namedtuple(
-    "ZeroShotInput",
+ZeroShotFeatureItem = collections.namedtuple(
+    "ZeroShotFeatureItem",
     [
         "tokens",
-        "token_ids",
+        "labels",
         "slot_names",
         "slot_vals",
-
     ]
 )
-
+ZeroShotModelInput = collections.namedtuple(
+    "ZeroShotModelInput",
+    [
+        "token_ids",
+        "slot_name_ids",
+        "slot_val_ids",
+    ]
+)
 
 class FewShotFeature(object):
     """ pre-processed data for prediction """
@@ -250,6 +256,7 @@ class SchemaInputBuilder(BertInputBuilder):
         support_feature_items, support_input = self.prepare_support(example, max_support_size)
         if self.opt.label_reps in ['cat']:  # represent labels by concat all all labels
             label_input, label_items = self.prepare_label_feature(label2id)
+            
         elif self.opt.label_reps in ['sep', 'sep_sum']:  # represent each label independently
             label_input, label_items = self.prepare_sep_label_feature(label2id)
         return test_feature_item, test_input, support_feature_items, support_input, label_items, label_input,
@@ -269,7 +276,9 @@ class SchemaInputBuilder(BertInputBuilder):
             wp_label.extend(['O'] * len(tmp_wp_text))
             wp_mark.extend([0] + [1] * (len(tmp_wp_text) - 1))
         label_item = self.data_item2feature_item(DataItem(text, label, wp_text, wp_label, wp_mark), 0)
+       
         label_input = self.get_test_model_input(label_item)
+       
         return label_input, label_item
 
     def prepare_sep_label_feature(self, label2id):
@@ -502,6 +511,10 @@ class SchemaFeatureConstructor(FeatureConstructor):
     ) -> FewShotFeature:
         test_feature_item, test_input, support_feature_items, support_input, label_items, label_input = \
             self.input_builder(example, max_support_size, label2id)
+        
+        
+
+
         test_target, support_target = self.output_builder(
             test_feature_item, support_feature_items, label2id, max_support_size)
         ret = FewShotFeature(
@@ -520,12 +533,113 @@ class SchemaFeatureConstructor(FeatureConstructor):
         return ret
 
 
+
+
+class NormalInputBuilderForZeroShot(object):
+    def __init__(self, tokenizer, opt):
+        self.tokenizer = tokenizer
+        self.opt = opt
+        
+    
+    def __call__(self, example, label2id, max_val_len=-1) -> (ZeroShotFeatureItem, ZeroShotModelInput):
+        utterance = self.prepare_utterance(example.input_item.seq_in)
+        slot_names, slot_names_mask = self.prepare_slot_name(example.input_item.slot_names, label2id)
+        print(slot_names)
+
+        print(slot_names_mask)
+        # slot_vals, slot_vals_mask = self.prepare_slot_val(example.input_item.slot_vals, label2id, max_val_len)
+        # return utterance, slot_names, slot_vals
+
+    def prepare_utterance(self, seq_in):
+        utterance = [self.tokenizer.convert_tokens_to_ids(token) for token  in seq_in]
+        return utterance
+
+    def prepare_slot_name(self, slot_names, label2id):
+        mask = [0] * len(label2id)
+        res_slot_names = []
+        for name,idx in label2id.items():
+            if name in slot_names or name == 'O' or name == '[PAD]':
+                mask[idx] = 1
+                res_slot_names.append(self.convert_label_name(name))
+            else:
+                res_slot_names.append(['[PAD]'])
+        return res_slot_names, mask
+
+        
+
+
+    def prepare_slot_val(self, slot_vals, max_val_len):
+        pass
+
+    def convert_label_name(self, name):
+        text = []
+        tmp_name = name
+        if 'B-' in name:
+            text.append('begin')
+            tmp_name = name.replace('B-', '')
+        elif 'I-' in name:
+            text.append('inner')
+            tmp_name = name.replace('I-', '')
+        elif 'O' == name:
+            text.append('ordinary')
+            tmp_name = ''
+
+        # special processing to label name
+        name_translations = [('PER', 'person'), ('ORG', 'organization'), ('LOC', 'location'),
+                             ('MISC', 'miscellaneous'), ('GPE', 'geographical political'),
+                             ('NORP', 'nationalities or religious or political groups'),
+                             # toursg data
+                             ("ACK", "acknowledgment, as well as common expressions used for grounding"),
+                             ("poi", "point of information"),
+                             # ("CANCEL", "cancelation"),
+                             # ("CLOSING", "closing remarks"),
+                             # ("COMMIT", "commitment"),
+                             # ("CONFIRM", "confirmation"),
+                             # ("ENOUGH", "no more information is needed"),
+                             # ("EXPLAIN", "an explanation/justification of a previous stated idea"),
+                             # ("HOW_MUCH", "money or time amounts"),
+                             # ("HOW_TO", "used to request/give specific instructions"),
+                             ("INFO", "information request"),
+                             # ("NEGATIVE", "negative responses"),
+                             # ("OPENING", "opening remarks"),
+                             # ("POSITIVE", "positive responses"),
+                             # ("PREFERENCE", "preferences"),
+                             # ("RECOMMEND", "recommendations"),
+                             # ("THANK", "thank you remarks"),
+                             # ("WHAT", "concept related utterances"),
+                             # ("WHEN", "time related utterances"),
+                             # ("WHERE", "location related utterances"),
+                             # ("WHICH", "entity related utterances"),
+                             # ("WHO", "person related utterances and questions"),
+                             ]
+        if tmp_name:
+            for shot, long in name_translations:
+                if tmp_name == shot:
+                    text.append(long)
+                    tmp_name = ''
+                    break
+        if tmp_name:
+            text.extend(tmp_name.lower().split('_'))
+        return text
+
+    def pad(self, l):
+        pass
+
+
+
+
+
+
+
+
 def flatten(l):
     """ convert list of list to list"""
     return [item for sublist in l for item in sublist]
 
 
-def make_dict(opt, examples: List[FewShotExample]) -> (Dict[str, int], Dict[int, str]):
+
+
+def make_dict(opt, examples) -> (Dict[str, int], Dict[int, str]):
     """
     make label2id dict
     label2id must follow rules:
@@ -545,11 +659,14 @@ def make_dict(opt, examples: List[FewShotExample]) -> (Dict[str, int], Dict[int,
         if opt.task == 'sl':
             all_labels.append(example.test_data_item.seq_out)
             all_labels.extend([data_item.seq_out for data_item in example.support_data_items])
+        elif opt.task == 'zero-shot':
+            all_labels.append(example.input_item.seq_out)
         else:
             all_labels.append(example.test_data_item.label)
             all_labels.extend([data_item.label for data_item in example.support_data_items])
     ''' collect label word set '''
     label_set = sorted(list(purify(set(flatten(all_labels)))))  # sort to make embedding id fixed
+
     # transfer label to index type such as `label_1`
     if opt.index_label:
         if 'label2index_type' not in opt:
@@ -579,7 +696,7 @@ def make_dict(opt, examples: List[FewShotExample]) -> (Dict[str, int], Dict[int,
         pass
     ''' build dict '''
     label2id['[PAD]'] = len(label2id)  # '[PAD]' in first position and id is 0
-    if opt.task == 'sl':
+    if opt.task == 'sl' or opt.task == 'zero-shot':
         label2id['O'] = len(label2id)
         for label in label_set:
             if label == 'O':
@@ -655,9 +772,11 @@ def make_preprocessor(opt):
         word2id, id2word = make_word_dict([opt.train_path, opt.dev_path, opt.test_path])
         opt.word2id = word2id
 
+
     if opt.context_emb in transformer_style_embs:
         tokenizer = BertTokenizer.from_pretrained(opt.bert_vocab)
         if opt.use_schema:
+            
             input_builder = SchemaInputBuilder(tokenizer=tokenizer, opt=opt)
         else:
             input_builder = BertInputBuilder(tokenizer=tokenizer, opt=opt)
@@ -667,6 +786,10 @@ def make_preprocessor(opt):
     elif opt.context_emb in ['glove', 'raw']:
         tokenizer = MyTokenizer(word2id=word2id, id2word=id2word)
         input_builder = NormalInputBuilder(tokenizer=tokenizer)
+    elif opt.context_emb == 'bilstm':
+        tokenizer = MyTokenizer(word2id=word2id, id2word=id2word)
+        input_builder = NormalInputBuilderForZeroShot(tokenizer=tokenizer)
+
     else:
         raise TypeError('wrong word representation type')
 
