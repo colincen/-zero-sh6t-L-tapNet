@@ -11,7 +11,7 @@ import pickle
 # my staff
 from utils.data_loader import ZeroShotRawDataLoader
 from utils.preprocessor import FeatureConstructor, BertInputBuilder, FewShotOutputBuilder, make_dict, \
-    save_feature, load_feature, make_preprocessor, make_label_mask, make_word_dict
+    save_feature, load_feature, make_preprocessor, make_label_mask, make_word_dict, NormalInputBuilderForZeroShot
 from utils.opt import define_args, basic_args, train_args, test_args, preprocess_args, model_args, option_check
 from utils.device_helper import prepare_model, set_device_environment
 # from utils.trainer import FewShotTrainer, SchemaFewShotTrainer, prepare_optimizer
@@ -92,7 +92,11 @@ def main():
     data_loader = ZeroShotRawDataLoader(opt)
     train_examples = data_loader.load_data(path=opt.train_path)
     train_label2id, train_id2label = make_dict(opt, train_examples)
-    print(train_label2id)
+    a = make_preprocessor(opt)
+    # r = a(train_examples[0], train_label2id, 10)
+    # for i in train_examples:
+    #     r = a(i, train_label2id, 10)
+
     # preprocessor = make_preprocessor(opt)
     # if opt.do_train:
     #     train_features, train_label2id, train_id2label, dev_features, dev_label2id, dev_id2label = \

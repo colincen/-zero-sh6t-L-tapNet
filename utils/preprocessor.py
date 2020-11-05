@@ -48,9 +48,11 @@ ZeroShotFeatureItem = collections.namedtuple(
 ZeroShotModelInput = collections.namedtuple(
     "ZeroShotModelInput",
     [
-        "token_ids",
-        "slot_name_ids",
-        "slot_val_ids",
+        "token_ids", 
+        "slot_names", 
+        "slot_names_mask",  
+        "slot_vals", 
+        "slot_vals_mask",
     ]
 )
 
@@ -539,37 +541,141 @@ class NormalInputBuilderForZeroShot(object):
     def __init__(self, tokenizer, opt):
         self.tokenizer = tokenizer
         self.opt = opt
-        
-    
-    def __call__(self, example, label2id, max_val_len=-1) -> (ZeroShotFeatureItem, ZeroShotModelInput):
+            
+    def __call__(self, example, label2id, max_val_len=10) -> (ZeroShotFeatureItem, ZeroShotModelInput):
+        # print(example.input_item.seq_in)
         utterance = self.prepare_utterance(example.input_item.seq_in)
+        # print(utterance)
         slot_names, slot_names_mask = self.prepare_slot_name(example.input_item.slot_names, label2id)
-        print(slot_names)
+        # print(slot_names)
 
-        print(slot_names_mask)
-        # slot_vals, slot_vals_mask = self.prepare_slot_val(example.input_item.slot_vals, label2id, max_val_len)
-        # return utterance, slot_names, slot_vals
+        # print(slot_names_mask)
+        slot_vals, slot_vals_mask = self.prepare_slot_val(example.input_item.slot_names, example.input_item.slot_vals, label2id, max_val_len)
+        ret =ZeroShotModelInput(
+            token_ids=torch.LongTensor(utterance),
+            slot_names=torch.LongTensor(slot_names),
+            slot_names_mask=torch.LongTensor(slot_names_mask),
+            slot_vals=torch.LongTensor(slot_vals),
+            slot_vals_mask=torch.LongTensor(slot_vals_mask)
+        )
+        return ret
 
     def prepare_utterance(self, seq_in):
-        utterance = [self.tokenizer.convert_tokens_to_ids(token) for token  in seq_in]
+        utterance = self.tokenizer.convert_tokens_to_ids(seq_in)
         return utterance
 
     def prepare_slot_name(self, slot_names, label2id):
-        mask = [0] * len(label2id)
+        slot_names_B = ['B-' + i for i in slot_names]
+        slot_names_I = ['I-' + i for i in slot_names]
+        slot_names = slot_names_B + slot_names_I
+        # mask = [0] * len(label2id)
         res_slot_names = []
-        for name,idx in label2id.items():
+        # print(slot_names)
+        id2label = {v : k for k, v in label2id.items()}
+        for idx in range(len(id2label)):
+            name = id2label[idx]
             if name in slot_names or name == 'O' or name == '[PAD]':
-                mask[idx] = 1
+                # mask[idx] = 1
                 res_slot_names.append(self.convert_label_name(name))
             else:
                 res_slot_names.append(['[PAD]'])
-        return res_slot_names, mask
+        res_slot_names, masks =  self.pad(res_slot_names, max_len=6, Type='one_layer')
+
+
+
+        res_slot_names_ids = []
+        for i in res_slot_names:
+            temp = self.tokenizer.convert_tokens_to_ids(i)
+            res_slot_names_ids.append(temp)
+
+        # print(res_slot_names)
+        # print(res_slot_names_ids)
+        # print('-'*30)
+
+        # print(len(res_slot_names_ids))
+        # print(len(masks))
+        return res_slot_names_ids, masks
+       
+    def prepare_slot_val(self, slot_names, slot_vals, label2id, max_val_len):
+        assert len(slot_names) == len(slot_vals)
+        id2label = {v:k for k,v in label2id.items()}
+        slot2val = {}
+        for i, name in enumerate(slot_names):
+            slot2val[name] = slot_vals[i]
+        slot_names_B = ['B-' + i for i in slot_names]
+        slot_names_I = ['I-' + i for i in slot_names]
+        slot_names = slot_names_B + slot_names_I
+
+        
+        res_slot_vals = [None] * len(label2id)
+        res_val_masks = [None] * len(label2id)
+        for id1 in range(len(id2label)):
+            
+            for id2 in range(len(slot_names)):
+                temp_val = []
+                if id2label[id1] == slot_names[id2]:
+                    # print(slot2val[id2label[id1][2:]])
+
+                    if id2label[id1][0] == 'B':
+                        temp_val = self.add_prefix_to_val(prefix='begin', val_list= slot2val[id2label[id1][2:]])
+                    elif id2label[id1][0] == 'I':
+                        temp_val = self.add_prefix_to_val(prefix='inner', val_list= slot2val[id2label[id1][2:]])
+                    temp_val, temp_mask = self.pad(temp_val, max_len=max_val_len, Type='one_layer')
+                    res_slot_vals[id1] = temp_val
+                    res_val_masks[id1] = temp_mask
+
+        for i, line in enumerate(res_slot_vals):
+            if line == None:
+                pad_list = ['[PAD]'] * max_val_len
+                pad_list = [pad_list] * len(slot_vals[0])
+                pad_mask = [0] * max_val_len
+                pad_mask = [pad_mask] * len(slot_vals[0])
+                res_slot_vals[i] = pad_list
+                res_val_masks[i] = pad_mask
+
+
+        
+        res_slot_val_ids = []
+        for i in res_slot_vals:
+            temp1 = []
+            for j in i:
+
+                temp1.append(self.tokenizer.convert_tokens_to_ids(j))
+            res_slot_val_ids.append(temp1)
+
+        
+        return res_slot_val_ids, res_val_masks
+
+
+            # if name in slot_names or name == 'O' or name == '[PAD]':
+            #     # mask[idx] = 1
+            #     res_slot_names.append(self.convert_label_name(name))
+            # else:
+            #     res_slot_names.append(['[PAD]'])
+        # for i in slot_vals:
+        #     temp = self.pad(i, 10, 'one_layer')
+        #     res_slot_vals.append(temp)
+
+
+            
+
+
+
+         
+
 
         
 
+    def add_prefix_to_val(self, prefix, val_list):
 
-    def prepare_slot_val(self, slot_vals, max_val_len):
-        pass
+        res= []
+        for i in val_list:
+            temp= []
+            temp.append(prefix)
+            temp.extend(i)
+            res.append(temp)
+
+        return res
 
     def convert_label_name(self, name):
         text = []
@@ -619,13 +725,35 @@ class NormalInputBuilderForZeroShot(object):
                     tmp_name = ''
                     break
         if tmp_name:
-            text.extend(tmp_name.lower().split('_'))
+            if tmp_name == '[PAD]':
+              text.extend([tmp_name])
+            else:    
+                text.extend(tmp_name.lower().split('_'))
         return text
 
-    def pad(self, l):
-        pass
+    def pad(self, l, max_len = -1, Type = 'one_layer'):
+        masks = []
+        if Type == 'one_layer':
+            for i in range(len(l)):
+                while(len(l[i]) < max_len):
+                    l[i].append('[PAD]')
+                l[i] = l[i][:max_len]
+            for i in l:
+                temp = []
+                for j in i:
+                    if j == '[PAD]':
+                        temp.append(0)
+                    else:
+                        temp.append(1)
+                masks.append(temp)
+        elif Type == 'two_layers':
+            pass
+
+        return l, masks
 
 
+class NormalOutputBuilderForZeroShot(object):
+    
 
 
 
@@ -635,8 +763,6 @@ class NormalInputBuilderForZeroShot(object):
 def flatten(l):
     """ convert list of list to list"""
     return [item for sublist in l for item in sublist]
-
-
 
 
 def make_dict(opt, examples) -> (Dict[str, int], Dict[int, str]):
@@ -731,6 +857,9 @@ def make_word_dict(all_files: List[str]) -> (Dict[str, int], Dict[int, str]):
                 all_words.extend(line)
             for line in raw_data['slots']:
                 all_words.extend(line)
+            all_words.append('begin')
+            all_words.append('inner')
+            all_words.append('ordinary')
             word_set = sorted(list(set(all_words)))  # sort to make embedding id fixed
             
     
@@ -788,20 +917,22 @@ def make_preprocessor(opt):
         input_builder = NormalInputBuilder(tokenizer=tokenizer)
     elif opt.context_emb == 'bilstm':
         tokenizer = MyTokenizer(word2id=word2id, id2word=id2word)
-        input_builder = NormalInputBuilderForZeroShot(tokenizer=tokenizer)
+        input_builder = NormalInputBuilderForZeroShot(opt=opt, tokenizer=tokenizer)
 
     else:
         raise TypeError('wrong word representation type')
 
-    ''' select output builder '''
-    output_builder = FewShotOutputBuilder()
+    return input_builder
 
-    ''' build preprocessor '''
-    if opt.use_schema:
-        preprocessor = SchemaFeatureConstructor(input_builder=input_builder, output_builder=output_builder)
-    else:
-        preprocessor = FeatureConstructor(input_builder=input_builder, output_builder=output_builder)
-    return preprocessor
+    # ''' select output builder '''
+    # output_builder = FewShotOutputBuilder()
+
+    # ''' build preprocessor '''
+    # if opt.use_schema:
+    #     preprocessor = SchemaFeatureConstructor(input_builder=input_builder, output_builder=output_builder)
+    # else:
+    #     preprocessor = FeatureConstructor(input_builder=input_builder, output_builder=output_builder)
+    # return preprocessor
 
 
 def make_label_mask(opt, path, label2id):
@@ -830,4 +961,4 @@ class MyTokenizer(object):
         self.vocab = word2id
 
     def convert_tokens_to_ids(self, tokens):
-        return [self.word2id.get(token, default=self.word2id['PAD']) for token in tokens]
+        return [self.word2id.get(token, self.word2id['[PAD]']) for token in tokens]
