@@ -535,14 +535,12 @@ class SchemaFeatureConstructor(FeatureConstructor):
         return ret
 
 
-
-
 class NormalInputBuilderForZeroShot(object):
     def __init__(self, tokenizer, opt):
         self.tokenizer = tokenizer
         self.opt = opt
             
-    def __call__(self, example, label2id, max_val_len=10) -> (ZeroShotFeatureItem, ZeroShotModelInput):
+    def __call__(self, example, label2id, max_val_len=10) -> ZeroShotModelInput:
         # print(example.input_item.seq_in)
         utterance = self.prepare_utterance(example.input_item.seq_in)
         # print(utterance)
@@ -656,16 +654,6 @@ class NormalInputBuilderForZeroShot(object):
         #     temp = self.pad(i, 10, 'one_layer')
         #     res_slot_vals.append(temp)
 
-
-            
-
-
-
-         
-
-
-        
-
     def add_prefix_to_val(self, prefix, val_list):
 
         res= []
@@ -753,11 +741,70 @@ class NormalInputBuilderForZeroShot(object):
 
 
 class NormalOutputBuilderForZeroShot(object):
+    def __init__(self, opt):
+        self.opt = opt
     
+    def __call__(self, example, label2id):
+        labels  = self.item2label_ids(example.input_item, label2id)
+        return torch.LongTensor(labels)
+    
+    def item2label_ids(self, f_item, label2id):
+        return [label2id[lb] for lb in f_item.seq_out]
 
 
+class ZeroShotFeature(object):
+    def __init__(
+        self,
+        gid,
+        modelInput,
+        label_ids,
+    ):
+        self.gid = gid
+        self.modelInput = modelInput
+        self.label_ids = label_ids
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return str(self.__dict__)    
 
 
+class ZeroShotFeatureConstructor:
+    def __init__(
+        self,
+        input_builder,
+        output_builder
+    ):
+        self.input_builder = input_builder
+        self.output_builder = output_builder
+    
+    def construct_feature(
+        self,
+        examples,
+        label2id,
+    ):
+        all_features = []
+        for example in examples:
+            feature = self.example2feature(example, label2id)
+            all_features.append(feature)
+
+        return all_features
+    
+    def example2feature(
+        self,
+        example,
+        label2id,
+    ):
+        Input = self.input_builder(example, label2id, max_val_len = 10)
+        Output = self.output_builder(example, label2id)
+        ret = ZeroShotFeature(
+            gid=example.gid,
+            modelInput=Input,
+            label_ids=Output
+        )
+
+        return ret
 
 
 def flatten(l):
@@ -895,7 +942,8 @@ def load_feature(path):
 def make_preprocessor(opt):
     """ make preprocessor """
     transformer_style_embs = ['bert', 'sep_bert', 'electra']
-
+    output_builder = None
+    preprocessor = None
     ''' select input_builder '''
     if opt.context_emb not in transformer_style_embs:
         word2id, id2word = make_word_dict([opt.train_path, opt.dev_path, opt.test_path])
@@ -918,21 +966,29 @@ def make_preprocessor(opt):
     elif opt.context_emb == 'bilstm':
         tokenizer = MyTokenizer(word2id=word2id, id2word=id2word)
         input_builder = NormalInputBuilderForZeroShot(opt=opt, tokenizer=tokenizer)
+        output_builder = NormalOutputBuilderForZeroShot(opt=opt)
+        preprocessor = ZeroShotFeatureConstructor(input_builder=input_builder, output_builder=output_builder)
+        return preprocessor
 
     else:
         raise TypeError('wrong word representation type')
 
-    return input_builder
+    # return input_builder
 
     # ''' select output builder '''
-    # output_builder = FewShotOutputBuilder()
+    if output_builder == None:
+        output_builder = FewShotOutputBuilder()
+
+    # return output_builder
+    
 
     # ''' build preprocessor '''
-    # if opt.use_schema:
-    #     preprocessor = SchemaFeatureConstructor(input_builder=input_builder, output_builder=output_builder)
-    # else:
-    #     preprocessor = FeatureConstructor(input_builder=input_builder, output_builder=output_builder)
-    # return preprocessor
+
+    if opt.use_schema:
+        preprocessor = SchemaFeatureConstructor(input_builder=input_builder, output_builder=output_builder)
+    else:
+        preprocessor = FeatureConstructor(input_builder=input_builder, output_builder=output_builder)
+    return preprocessor
 
 
 def make_label_mask(opt, path, label2id):

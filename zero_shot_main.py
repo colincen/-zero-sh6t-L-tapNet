@@ -37,14 +37,14 @@ def get_training_data_and_feature(opt, data_loader, preprocessor):
                 get_training_data_and_feature(opt, data_loader, preprocessor)
             opt.load_feature, opt.save_feature = True, False  # restore option
     else:
-        train_examples, train_max_len, train_max_support_size = data_loader.load_data(path=opt.train_path)
-        dev_examples, dev_max_len, dev_max_support_size = data_loader.load_data(path=opt.dev_path)
+        train_examples = data_loader.load_data(path=opt.train_path)
+        dev_examples = data_loader.load_data(path=opt.dev_path)
         train_label2id, train_id2label = make_dict(opt, train_examples)
         dev_label2id, dev_id2label = make_dict(opt, dev_examples)
         logger.info(' Finish train dev prepare dict ')
         train_features = preprocessor.construct_feature(
-            train_examples, train_max_support_size, train_label2id, train_id2label)
-        dev_features = preprocessor.construct_feature(dev_examples, dev_max_support_size, dev_label2id, dev_id2label)
+            train_examples, train_label2id)
+        dev_features = preprocessor.construct_feature(dev_examples, dev_label2id)
         logger.info(' Finish prepare train dev features ')
 
         if opt.save_feature:
@@ -90,35 +90,24 @@ def main():
 
     ''' data & feature '''
     data_loader = ZeroShotRawDataLoader(opt)
-    train_examples = data_loader.load_data(path=opt.train_path)
-    train_label2id, train_id2label = make_dict(opt, train_examples)
-    a = make_preprocessor(opt)
-    # r = a(train_examples[0], train_label2id, 10)
-    # for i in train_examples:
-    #     r = a(i, train_label2id, 10)
+    preprocessor = make_preprocessor(opt)
+    if opt.do_train:
+        train_features, train_label2id, train_id2label, dev_features, dev_label2id, dev_id2label = \
+            get_training_data_and_feature(opt, data_loader, preprocessor)
 
-    # preprocessor = make_preprocessor(opt)
-    # if opt.do_train:
-    #     train_features, train_label2id, train_id2label, dev_features, dev_label2id, dev_id2label = \
-    #         get_training_data_and_feature(opt, data_loader, preprocessor)
+    else:
+        train_features, train_label2id, train_id2label, dev_features, dev_label2id, dev_id2label = [None] * 6
 
-    #     if opt.mask_transition and opt.task == 'sl':
-    #         opt.train_label_mask = make_label_mask(opt, opt.train_path, train_label2id)
-    #         opt.dev_label_mask = make_label_mask(opt, opt.dev_path, dev_label2id)
-    # else:
-    #     train_features, train_label2id, train_id2label, dev_features, dev_label2id, dev_id2label = [None] * 6
-    #     if opt.mask_transition and opt.task == 'sl':
-    #         opt.train_label_mask = None
-    #         opt.dev_label_mask = None
-    # if opt.do_predict:
-    #     test_features, test_label2id, test_id2label = get_testing_data_feature(opt, data_loader, preprocessor)
-    #     if opt.mask_transition and opt.task == 'sl':
-    #         opt.test_label_mask = make_label_mask(opt, opt.test_path, test_label2id)
-    # else:
-    #     test_features, test_label2id, test_id2label = [None] * 3
-    #     if opt.mask_transition and opt.task == 'sl':
-    #         opt.test_label_mask = None
+    if opt.do_predict:
+        test_features, test_label2id, test_id2label = get_testing_data_feature(opt, data_loader, preprocessor)
+    
+    else:
+        test_features, test_label2id, test_id2label = [None] * 3
+    
 
+
+
+   
     # ''' over fitting test '''
     # if opt.do_overfit_test:
     #     test_features, test_label2id, test_id2label = train_features, train_label2id, train_id2label
