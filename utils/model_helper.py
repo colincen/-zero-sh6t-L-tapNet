@@ -8,7 +8,7 @@ import copy
 # my staff
 from models.modules.context_embedder_base import ContextEmbedderBase, BertContextEmbedder, \
     BertSeparateContextEmbedder, NormalContextEmbedder, BertSchemaContextEmbedder, BertSchemaSeparateContextEmbedder, \
-    ElectraContextEmbedder, ElectraSchemaContextEmbedder
+    ElectraContextEmbedder, ElectraSchemaContextEmbedder, BilstmContextEmbedder
 from models.modules.similarity_scorer_base import SimilarityScorerBase, MatchingSimilarityScorer, \
     PrototypeSimilarityScorer, ProtoWithLabelSimilarityScorer, TapNetSimilarityScorer, \
     reps_dot, reps_l2_sim, reps_cosine_sim
@@ -61,6 +61,10 @@ def make_model(opt, config):
         context_embedder.load_embedding()
     elif opt.context_emb == 'raw':
         context_embedder = NormalContextEmbedder(opt=opt, num_token=len(opt.word2id))
+    elif opt.context_emb == 'bilstm':
+        print('ok')
+        context_embedder = BilstmContextEmbedder(opt=opt, num_token=len(opt.word2id))
+        context_embedder.load_embedding()
     else:
         raise TypeError('wrong component type')
 

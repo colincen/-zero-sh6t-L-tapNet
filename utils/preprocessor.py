@@ -1018,3 +1018,4 @@ class MyTokenizer(object):
 
     def convert_tokens_to_ids(self, tokens):
         return [self.word2id.get(token, self.word2id['[PAD]']) for token in tokens]
+

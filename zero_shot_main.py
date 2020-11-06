@@ -16,7 +16,7 @@ from utils.opt import define_args, basic_args, train_args, test_args, preprocess
 from utils.device_helper import prepare_model, set_device_environment
 # from utils.trainer import FewShotTrainer, SchemaFewShotTrainer, prepare_optimizer
 # from utils.tester import FewShotTester, SchemaFewShotTester, eval_check_points
-# from utils.model_helper import make_model, load_model
+from utils.model_helper import make_model, load_model
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -63,11 +63,11 @@ def get_testing_data_feature(opt, data_loader, preprocessor):
             test_features, test_label2id, test_id2label = get_testing_data_feature(opt, data_loader, preprocessor)
             opt.load_feature, opt.save_feature = True, False  # restore option
     else:
-        test_examples, test_max_len, test_max_support_size = data_loader.load_data(path=opt.test_path)
+        test_examples = data_loader.load_data(path=opt.test_path)
         test_label2id, test_id2label = make_dict(opt, test_examples)
         logger.info(' Finish prepare test dict')
         test_features = preprocessor.construct_feature(
-            test_examples, test_max_support_size, test_label2id, test_id2label)
+            test_examples, test_label2id)
         logger.info(' Finish prepare test feature')
         if opt.save_feature:
             save_feature(opt.test_path.replace('.json', '.saved.pk'), test_features, test_label2id, test_id2label)
@@ -104,8 +104,11 @@ def main():
     else:
         test_features, test_label2id, test_id2label = [None] * 3
     
+    word2id, id2word = make_word_dict([opt.train_path, opt.dev_path, opt.test_path])
 
+    opt.word2id = word2id
 
+    training_model = make_model(opt, config={'num_tags': len(train_label2id)})
 
    
     # ''' over fitting test '''

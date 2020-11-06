@@ -58,6 +58,9 @@ epoch=4
 # ==== model setting =========
 # ---- encoder setting -----
 
+embedding_cache=/home_export/sh
+
+
 # embedder=bert
 embedder=bilstm
 #embedder=sep_bert
@@ -99,6 +102,7 @@ ple_scaler=fix
 ple_scale_r=0.5
 #ple_scale_r=1
 #ple_scale_r=0.01
+
 
 tap_random_init=--tap_random_init
 tap_random_init_r=1
@@ -147,9 +151,9 @@ label_trans_normalizer=none
 
 
 # ======= default path (for quick distribution) ==========
-bert_base_uncased=/mnt/sda/f/shdata/bert-base-uncased/
-bert_base_uncased_vocab=/mnt/sda/f/shdata/bert-base-uncased/vocab.txt
-base_data_dir=/mnt/sda/f/shdata/zero-shot-dataset/ # acl20 data
+bert_base_uncased=/home_export/sh/bert-base-uncased/
+bert_base_uncased_vocab=/home_export/sh/bert-base-uncased/vocab.txt
+base_data_dir=/home_export/sh/zero-shot-dataset/ # acl20 data
 
 
 echo [START] set jobs on dataset [ ${dataset_lst[@]} ] on gpu [ ${gpu_list} ]
@@ -221,6 +225,7 @@ do
                                                             --warmup_epoch ${warmup_epoch} \
                                                             --test_batch_size ${test_batch_size} \
                                                             --context_emb ${embedder} \
+                                                            --embedding_cache ${embedding_cache} \
                                                             --emb_dim ${embedding_dim} \
                                                             --hidden_size ${hidden_size} \
                                                             ${use_schema} \
@@ -251,7 +256,7 @@ do
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
                                                             --load_feature 
-                                                            # > /mnt/sda/f/shdata/result/${model_name}.DATA.${file_mark}.log
+                                                            # > /home_export/sh/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}
                                                         echo Task:  ${file_mark}

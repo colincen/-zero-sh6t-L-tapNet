@@ -344,15 +344,21 @@ class NormalContextEmbedder(ContextEmbedderBase):
         word2id = self.opt.word2id
         logging.info('Load embedding from pytorch-nlp.')
         if self.opt.embedding_cache:
-            embedding_dict = GloVe(cache=self.opt.embedding_cache)  # load embedding cache from a specific place
+            embedding_dict = GloVe(name = '6B', cache=self.opt.embedding_cache)  # load embedding cache from a specific place
         else:
             embedding_dict = GloVe()  # load embedding cache from local dir or download now
         logging.info('Load embedding finished.')
         self.embedding_layer.weight.data.uniform_(-0.25, 0.25)
+        word_in_dict = 0
+        # print(word2id)
         for word, idx in word2id.items():
-            if word in embedding_dict.stoi:
-                self.embedding_layer.weight.data[idx] = embedding_dict[word]
+            # if word in embedding_dict.stoi:
+            if word in embedding_dict:
+                word_in_dict += 1
+            self.embedding_layer.weight.data[idx] = embedding_dict[word]
+
         logging.info('Word embedding size: {0}'.format(self.embedding_layer.weight.data.size()))
+        logging.info('unk word {}'.format(word_in_dict / len(word2id)))
 
     def expand_test_item(
             self,
@@ -375,6 +381,16 @@ class NormalContextEmbedder(ContextEmbedderBase):
         sent_len = input_ids.shape[-1]
         input_ids = input_ids.view(-1, sent_len)
         return input_ids
+
+
+
+class BilstmContextEmbedder(NormalContextEmbedder):
+    def __init__(self, opt, num_token):
+        super(BilstmContextEmbedder, self).__init__(opt, num_token)
+    
+    def forward():
+        pass
+
 
 
 class BertSeparateContextEmbedder(BertContextEmbedder):

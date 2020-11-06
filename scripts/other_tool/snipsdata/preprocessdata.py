@@ -2,8 +2,8 @@ import os
 import random
 import json
 
-raw_dir = '/mnt/sda/f/shdata/snips/'
-new_dir = '/mnt/sda/f/shdata/zero-shot-dataset/'
+raw_dir = '/home_export/sh/snips/'
+new_dir = '/home_export/sh/zero-shot-dataset/'
 
 
 def process_data_by_intent():
