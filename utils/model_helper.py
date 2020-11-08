@@ -62,7 +62,7 @@ def make_model(opt, config):
     elif opt.context_emb == 'raw':
         context_embedder = NormalContextEmbedder(opt=opt, num_token=len(opt.word2id))
     elif opt.context_emb == 'bilstm':
-        print('ok')
+        
         context_embedder = BilstmContextEmbedder(opt=opt, num_token=len(opt.word2id))
         context_embedder.load_embedding()
     else:

@@ -387,11 +387,43 @@ class NormalContextEmbedder(ContextEmbedderBase):
 class BilstmContextEmbedder(NormalContextEmbedder):
     def __init__(self, opt, num_token):
         super(BilstmContextEmbedder, self).__init__(opt, num_token)
+        self.BilstmEncoder = torch.nn.LSTM(input_size=opt.embedding_dim,
+                                            hidden_size=opt.hidden_size*2,
+                                            bias=True,
+                                            batch_first=True,
+                                            bidirectional=True)
+        self.Dropout = torch.nn.Dropout(0.5)
     
-    def forward():
-        pass
+    def forward(self,
+                token_ids,
+                token_masks,
+                slot_names,
+                slot_names_mask,
+                slot_vals,
+                slot_vals_mask):
+        """
+        token_ids: (batch_size x seq_len)
+        slot_names: (batch_size x label_size x max_name_len)
+        slot_names_mask: (batch_size x label_size x max_name_len)        
+        slot_vals: (batch_size x label_size x val_num x max_val_len)
+        slot_vals_mask: (batch_size x label_size x val_num x max_val_len)
+        """
+        batch_size = token_ids.size(0)
+        label_size = slot_names_mask.size(1)
+        val_num = slot_vals.size(2)
+        token_reps = self.embedding_layer(token_ids)
+        slot_names_reps = self.embedding_layer(slot_names)
+        slot_vals_reps = self.embedding_layer(slot_vals)
+
+        # token_reps = self.BilstmEncoder(token_reps)
+        # slot_names_reps = self.BilstmEncoder(torch.view(slot_names_reps, (batch_size * label_size, -1)))
+        # slot_vals_reps = self.BilstmEncoder(torch.view(slot_vals, (batch_size * label_size * val_num, -1)))
+
+        
 
 
+        return token_reps, slot_names_reps, slot_vals_reps
+        
 
 class BertSeparateContextEmbedder(BertContextEmbedder):
     def __init__(self, opt):

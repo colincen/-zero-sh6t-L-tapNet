@@ -26,6 +26,12 @@ class FewShotDataset(Dataset):
     def __len__(self):
         return len(self.tensor_features)
 
+class ZeroShotDataset(FewShotDataset):
+    def __init__(self, tensor_features):
+        super(ZeroShotDataset, self).__init__(tensor_features)
+
+
+
 
 def pad_tensor(vec: torch.Tensor, pad: int, dim: int) -> torch.Tensor:
     """
@@ -146,3 +152,11 @@ class SimilarLengthSampler(Sampler):
 
     def __len__(self):
         return len(self.data_source)
+
+p = PadCollate(dim=0)
+a = [[1,2,3]]
+b = [1,2]
+c = [3,2,1,1,4]
+d = [[torch.tensor(a), torch.tensor(b), torch.tensor(c)]]
+res = p.pad_collate(d)
+print(res)

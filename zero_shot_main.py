@@ -91,6 +91,7 @@ def main():
     ''' data & feature '''
     data_loader = ZeroShotRawDataLoader(opt)
     preprocessor = make_preprocessor(opt)
+    
     if opt.do_train:
         train_features, train_label2id, train_id2label, dev_features, dev_label2id, dev_id2label = \
             get_training_data_and_feature(opt, data_loader, preprocessor)
@@ -108,17 +109,23 @@ def main():
 
     opt.word2id = word2id
 
-    training_model = make_model(opt, config={'num_tags': len(train_label2id)})
 
+
+
+    # training_model = make_model(opt, config={'num_tags': len(train_label2id)})
+    
    
     # ''' over fitting test '''
     # if opt.do_overfit_test:
     #     test_features, test_label2id, test_id2label = train_features, train_label2id, train_id2label
     #     dev_features, dev_label2id, dev_id2label = train_features, train_label2id, train_id2label
 
-    # ''' select training & testing mode '''
-    # trainer_class = SchemaFewShotTrainer if opt.use_schema else FewShotTrainer
-    # tester_class = SchemaFewShotTester if opt.use_schema else FewShotTester
+
+    ''' select training & testing mode '''
+    # trainer_class = SchemaZeroShotTrainer 
+    # tester_class = SchemaZeroShotTester 
+
+
 
     # ''' training '''
     # best_model = None

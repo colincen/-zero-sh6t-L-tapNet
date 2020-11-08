@@ -566,6 +566,12 @@ class SchemaFewShotTrainer(FewShotTrainer):
         return loss
 
 
+class SchemaZeroShotTrainer(FewShotTrainer):
+    def __init__(self, opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester=None):
+        super(SchemaZeroShotTrainer, self).__init__(opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester)
+
+    
+
 def prepare_optimizer(opt, model, num_train_features, upper_structures=None):
     """
     :param opt:
