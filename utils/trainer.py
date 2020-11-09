@@ -576,7 +576,7 @@ class SchemaZeroShotTrainer(FewShotTrainer):
     
     def get_data_loader(self, dataset, sampler):
         pad_collate = PadCollate(dim=-1) 
-        data_loader = DataLoader(dataset, sampler=sampler, batch_size=32 , collate_fn=pad_collate)
+        data_loader = DataLoader(dataset, sampler=sampler, batch_size=self.batch_size , collate_fn=pad_collate)
         return data_loader  
     
     def unpack_feature(self, feature: ZeroShotFeature) -> List[torch.Tensor]:

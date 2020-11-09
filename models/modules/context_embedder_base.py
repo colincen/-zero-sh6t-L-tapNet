@@ -4,6 +4,8 @@ import logging
 import sys
 from transformers import BertModel, ElectraModel
 from torchnlp.word_to_vector import GloVe
+import torch.nn.utils.rnn as rnn_utils
+
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -388,7 +390,7 @@ class BilstmContextEmbedder(NormalContextEmbedder):
     def __init__(self, opt, num_token):
         super(BilstmContextEmbedder, self).__init__(opt, num_token)
         self.BilstmEncoder = torch.nn.LSTM(input_size=opt.emb_dim,
-                                            hidden_size=opt.hidden_size*2,
+                                            hidden_size= int (opt.hidden_size / 2),
                                             bias=True,
                                             batch_first=True,
                                             bidirectional=True)
@@ -408,16 +410,95 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         slot_vals: (batch_size x label_size x val_num x max_val_len)
         slot_vals_mask: (batch_size x label_size x val_num x max_val_len)
         """
-        print('ok')
+        # print('ok')
+
         batch_size = token_ids.size(0)
         label_size = slot_names_mask.size(1)
         val_num = slot_vals.size(2)
+
+        token_masks = (torch.zeros(token_ids.size()).type_as(token_ids) == token_ids)
+        token_masks = (token_masks == 0)
+        token_masks = token_masks.byte()
+
+        token_length = torch.sum(token_masks, 1)
+
+        # print(token_length)
+
+        # print(token_ids)
+        # print(token_masks)
+
+
         token_reps = self.embedding_layer(token_ids)
-        slot_names_reps = self.embedding_layer(slot_names)
+
         slot_vals_reps = self.embedding_layer(slot_vals)
 
-        # token_reps = self.BilstmEncoder(token_reps)
+
+
+        token_packed = rnn_utils.pack_padded_sequence(token_reps, token_length, batch_first=True, enforce_sorted=False)
+        token_reps, _ = self.BilstmEncoder(token_packed)
+        token_reps, _ = rnn_utils.pad_packed_sequence(token_reps, batch_first=True)
+        token_reps = self.Dropout(token_reps)
+        # print(token_reps.size())
+
+
+        slot_names_merge = slot_names.view(batch_size * label_size, -1)
+        slot_names_mask_merge = slot_names_mask.view(batch_size * label_size, -1)
+        slot_names_length = torch.sum(slot_names_mask_merge, 1)
+
+        slot_names_index = torch.range(0, slot_names_length.size(0)-1, device=token_ids.device)
+
+        slot_names_index = slot_names_index[slot_names_length > 0]
+        domain_slot_names_index = slot_names_index.long()
+
+        slot_names_merge = slot_names_merge[domain_slot_names_index, :]
+        slot_names_length = slot_names_length[domain_slot_names_index]
+        
+        # print(slot_names_length)
+        # print(slot_names_length.size())
+
+
+        # print(slot_names_index)
+        # print(slot_names_index.size())
+
+        # print(slot_names_merge)
+        # print(slot_names_merge.size())
+
+        # print(slot_names_merge.size())
+        # print(slot_names_length.size())
+        slot_names_reps = self.embedding_layer(slot_names_merge)
+        # print(slot_names_reps.size())
+        slot_names_packed = rnn_utils.pack_padded_sequence(slot_names_reps, slot_names_length, batch_first=True, enforce_sorted=False)
+        slot_names_reps, _ = self.BilstmEncoder(slot_names_packed)
+        slot_names_reps, _ = rnn_utils.pad_packed_sequence(slot_names_reps, batch_first=True)
+        slot_names_reps = self.Dropout(slot_names_reps)
+
+        slot_names_reps = torch.sum(slot_names_reps, -2)
+
+        
+        output_dim = slot_names_reps.size(1)
+        pad_slot_names_reps = torch.zeros(size=(batch_size * label_size, output_dim), device=token_ids.device)
+        pad_slot_names_reps[domain_slot_names_index, :] = slot_names_reps
+
+
+
+
+
+
+        # print(pad_slot_names_reps)
+        # print(pad_slot_names_reps.sum(-1))
+        # print(pad_slot_names_reps.size())
+
+
+
+
+
+
+        # print(slot_names_reps.size())
+
+
         # slot_names_reps = self.BilstmEncoder(torch.view(slot_names_reps, (batch_size * label_size, -1)))
+
+
         # slot_vals_reps = self.BilstmEncoder(torch.view(slot_vals, (batch_size * label_size * val_num, -1)))
 
         
