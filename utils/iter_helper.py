@@ -30,9 +30,6 @@ class ZeroShotDataset(FewShotDataset):
     def __init__(self, tensor_features):
         super(ZeroShotDataset, self).__init__(tensor_features)
 
-
-
-
 def pad_tensor(vec: torch.Tensor, pad: int, dim: int) -> torch.Tensor:
     """
     args:
@@ -84,6 +81,13 @@ class PadCollate:
             each tensor belongs to one items type.
         """
         ret = []
+
+        # for a in batch[0]:
+        #     print(a.size())
+        # print('-'*10)
+        # for a in batch[1]:
+        #     print(a.size())
+        # print('-'*10)
         for item_idx in range(len(batch[0])):  # pad each data item
             # find longest sequence
             max_len = max(map(lambda x: x[item_idx].shape[self.get_dim(item_idx)], batch))
@@ -96,6 +100,13 @@ class PadCollate:
             # stack all
             padded_item_lst = torch.stack(padded_item_lst, dim=0)
             ret.append(padded_item_lst)
+        
+
+        
+
+        # for a in ret:
+        #     print(a.size())
+        # print('-'*10)
         return ret
 
     def get_dim(self, item_idx):
@@ -125,13 +136,18 @@ class SimilarLengthSampler(Sampler):
         batch_size (int): num of samples in one batch
     """
 
-    def __init__(self, data_source, batch_size):
+    def __init__(self, opt, data_source, batch_size):
         self.data_source = data_source
         self.batch_size = batch_size
+        self.opt = opt
+        
 
         all_idxs = list(range(len(data_source)))
         all_lens = [self.get_length(idx) for idx in all_idxs]
+        # print(all_idxs)
+        # print(all_lens)
         self.all_index = self.sort_and_batching(all_idxs, all_lens, batch_size)
+
 
     def sort_and_batching(self, all_idxs, all_lens, batch_size):
         sorted_idxs = sorted(zip(all_idxs, all_lens), key=lambda x: x[1], reverse=True)
@@ -145,7 +161,10 @@ class SimilarLengthSampler(Sampler):
         return [lst[i: i + n] for i in range(0, len(lst), n)]
 
     def get_length(self, idx):
-        return len(self.data_source[idx][0])  # we use the test length in sorting
+        if self.opt.task == 'zero-shot':
+            return len(self.data_source[idx][1])
+        else:
+            return len(self.data_source[idx][0])  # we use the test length in sorting
 
     def __iter__(self):
         return iter(copy.deepcopy(self.all_index))  # if not deep copy, iteration will stop after first step
@@ -153,10 +172,43 @@ class SimilarLengthSampler(Sampler):
     def __len__(self):
         return len(self.data_source)
 
-p = PadCollate(dim=0)
-a = [[1,2,3]]
-b = [1,2]
-c = [3,2,1,1,4]
-d = [[torch.tensor(a), torch.tensor(b), torch.tensor(c)]]
-res = p.pad_collate(d)
-print(res)
+# p = PadCollate(dim=0)
+# a = [1,2,3]
+# b = [1,2]
+# c = [3,2,1,1,4]
+
+# d = [[torch.tensor(a)], [torch.tensor(b)], [torch.tensor(c)]]
+# print(d)
+# res = p.pad_collate(d)
+# print(res)
+
+
+# p = PadCollate(dim=0)
+# a1 = [1,2,3]
+# b1 = [1,2]
+# c1 = [3,2,1,1,4]
+
+# a2 = [2,2]
+# b2 = [4,5,6]
+# c2 = [1,1,1,1,1]
+
+# a1=torch.tensor(a1)
+# b1=torch.tensor(b1)
+# c1=torch.tensor(c1)
+
+# a2=torch.tensor(a2)
+# b2=torch.tensor(b2)
+# c2=torch.tensor(c2)
+
+# l = [[a1, b1, c1], [a2,b2,c2]]
+# res = p.pad_collate(l)
+# print(res)
+
+# a1 = [torch.rand([1]), torch.rand([13]), torch.rand([3, 7, 4]), torch.rand([7,4])]
+# a2 = [torch.rand([1]), torch.rand([15]), torch.rand([3, 7, 6]), torch.rand([7,2])]
+# b = [a1, a2]
+# p =PadCollate(dim=-1, sp_dim=-1, sp_item_idx=[-1])
+# res = p.pad_collate(b)
+# # for a in res:
+# #     print(a.size())
+# print(res[1])

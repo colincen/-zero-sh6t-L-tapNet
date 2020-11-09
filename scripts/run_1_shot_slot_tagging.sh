@@ -147,9 +147,9 @@ label_trans_normalizer=none
 
 
 # ======= default path (for quick distribution) ==========
-bert_base_uncased=/mnt/sda/f/shdata/bert-base-uncased/
-bert_base_uncased_vocab=/mnt/sda/f/shdata/bert-base-uncased/vocab.txt
-base_data_dir=/mnt/sda/f/shdata/ACL2020data/ # acl20 data
+bert_base_uncased=/home_export/sh/bert-base-uncased/
+bert_base_uncased_vocab=/home_export/sh/bert-base-uncased/vocab.txt
+base_data_dir=/home/sh/MetaDialog/ACL2020data/ # acl20 data
 
 
 echo [START] set jobs on dataset [ ${dataset_lst[@]} ] on gpu [ ${gpu_list} ]

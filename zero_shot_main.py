@@ -14,7 +14,7 @@ from utils.preprocessor import FeatureConstructor, BertInputBuilder, FewShotOutp
     save_feature, load_feature, make_preprocessor, make_label_mask, make_word_dict, NormalInputBuilderForZeroShot
 from utils.opt import define_args, basic_args, train_args, test_args, preprocess_args, model_args, option_check
 from utils.device_helper import prepare_model, set_device_environment
-# from utils.trainer import FewShotTrainer, SchemaFewShotTrainer, prepare_optimizer
+from utils.trainer import FewShotTrainer, SchemaFewShotTrainer, prepare_optimizer, SchemaZeroShotTrainer
 # from utils.tester import FewShotTester, SchemaFewShotTester, eval_check_points
 from utils.model_helper import make_model, load_model
 
@@ -110,6 +110,15 @@ def main():
     opt.word2id = word2id
 
 
+    # trainer = SchemaZeroShotTrainer(opt, None,None,None,None,None)
+
+    # dataset = trainer.get_dataset(train_features)
+
+    # sampler = trainer.get_sampler(dataset)
+    # # print(sampler)
+
+    # data_loader = trainer.get_data_loader(dataset, sampler)
+
 
 
     # training_model = make_model(opt, config={'num_tags': len(train_label2id)})
@@ -122,31 +131,31 @@ def main():
 
 
     ''' select training & testing mode '''
-    # trainer_class = SchemaZeroShotTrainer 
+    trainer_class = SchemaZeroShotTrainer 
     # tester_class = SchemaZeroShotTester 
 
 
 
     # ''' training '''
-    # best_model = None
-    # if opt.do_train:
-    #     logger.info("***** Perform training *****")
-    #     if opt.restore_cpt:  # restart training from a check point.
-    #         training_model = load_model(opt.saved_model_path)  # restore optimizer param is not support now.
-    #         opt = training_model.opt
-    #         opt.warmup_epoch = -1
-    #     else:
-    #         training_model = make_model(opt, config={'num_tags': len(train_label2id)})
-    #     training_model = prepare_model(opt, training_model, device, n_gpu)
+    best_model = None
+    if opt.do_train:
+        logger.info("***** Perform training *****")
+        if opt.restore_cpt:  # restart training from a check point.
+            training_model = load_model(opt.saved_model_path)  # restore optimizer param is not support now.
+            opt = training_model.opt
+            opt.warmup_epoch = -1
+        else:
+            training_model = make_model(opt, config={'num_tags': len(train_label2id)})
+        training_model = prepare_model(opt, training_model, device, n_gpu)
     #     if opt.mask_transition and opt.task == 'sl':
     #         training_model.label_mask = opt.train_label_mask.to(device)
     #     # prepare a set of name subseuqence/mark to use different learning rate for part of params
     #     upper_structures = [
     #         'backoff', 'scale_rate', 'f_theta', 'phi', 'start_reps', 'end_reps', 'biaffine']
-    #     param_to_optimize, optimizer, scheduler = prepare_optimizer(
-    #         opt, training_model, len(train_features), upper_structures)
+        param_to_optimize, optimizer, scheduler = prepare_optimizer(
+            opt, training_model, len(train_features))
     #     tester = tester_class(opt, device, n_gpu)
-    #     trainer = trainer_class(opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester=tester)
+        trainer = trainer_class(opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester=None)
     #     if opt.warmup_epoch > 0:
     #         training_model.no_embedder_grad = True
     #         stage_1_param_to_optimize, stage_1_optimizer, stage_1_scheduler = prepare_optimizer(
@@ -157,9 +166,9 @@ def main():
     #         training_model = trained_model
     #         training_model.no_embedder_grad = False
     #         print('========== Warmup training finished! ==========')
-    #     trained_model, best_dev_score, test_score = trainer.do_train(
-    #         training_model, train_features, opt.num_train_epochs,
-    #         dev_features, dev_id2label, test_features, test_id2label, best_dev_score_now=0)
+        trained_model, best_dev_score, test_score = trainer.do_train(
+            training_model, train_features, opt.num_train_epochs,
+            dev_features, dev_id2label, test_features, test_id2label, best_dev_score_now=0)
 
     #     # decide the best model
     #     if not opt.eval_when_train:  # select best among check points

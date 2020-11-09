@@ -12,8 +12,8 @@ from tqdm import tqdm, trange
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 # My Staff
-from utils.iter_helper import PadCollate, FewShotDataset, SimilarLengthSampler
-from utils.preprocessor import FewShotFeature, ModelInput
+from utils.iter_helper import PadCollate, FewShotDataset, SimilarLengthSampler,ZeroShotDataset
+from utils.preprocessor import FewShotFeature, ModelInput, ZeroShotFeature
 from utils.device_helper import prepare_model
 from utils.model_helper import make_model, load_model
 from models.few_shot_seq_labeler import FewShotSeqLabeler
@@ -118,6 +118,7 @@ class TrainerBase:
                     batch = tuple(t.to(self.device) for t in batch)  # multi-gpu does scattering it-self
                 ''' loss '''
                 loss = self.do_forward(batch, model, epoch_id, step)
+                return 0, 0, 0
                 loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
                 loss.backward()
 
@@ -370,7 +371,7 @@ class FewShotTrainer(TrainerBase):
     def get_sampler(self, dataset):
         if self.opt.local_rank == -1:
             if self.opt.sampler_type == 'similar_len':
-                sampler = SimilarLengthSampler(dataset, batch_size=self.batch_size)
+                sampler = SimilarLengthSampler(self.opt, dataset, batch_size=self.batch_size)
             elif self.opt.sampler_type == 'random':
                 sampler = RandomSampler(dataset)
             else:
@@ -570,7 +571,52 @@ class SchemaZeroShotTrainer(FewShotTrainer):
     def __init__(self, opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester=None):
         super(SchemaZeroShotTrainer, self).__init__(opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester)
 
+    def get_dataset(self, features):
+        return ZeroShotDataset([self.unpack_feature(f) for f in features])
     
+    def get_data_loader(self, dataset, sampler):
+        pad_collate = PadCollate(dim=-1) 
+        data_loader = DataLoader(dataset, sampler=sampler, batch_size=32 , collate_fn=pad_collate)
+        return data_loader  
+    
+    def unpack_feature(self, feature: ZeroShotFeature) -> List[torch.Tensor]:
+        ret = [
+            torch.LongTensor([feature.gid]),
+            # test
+            feature.modelInput.token_ids,
+            feature.modelInput.slot_names,
+            feature.modelInput.slot_names_mask,
+            feature.modelInput.slot_vals,
+            feature.modelInput.slot_vals_mask,
+            # feature.modelInput,
+            feature.label_ids,
+        ]
+        return ret
+
+    def do_forward(self, batch, model, epoch_id, step):
+        (
+            gid,  # 0
+            token_ids,  # 1
+            slot_names,
+            slot_names_mask,
+            slot_vals,
+            slot_vals_mask,
+            # label feature
+            label_ids,
+        ) = batch
+
+
+
+        loss = model(
+            token_ids,
+            slot_names,
+            slot_names_mask,
+            slot_vals,
+            slot_vals_mask,
+            label_ids,
+        )
+        return loss
+
 
 def prepare_optimizer(opt, model, num_train_features, upper_structures=None):
     """

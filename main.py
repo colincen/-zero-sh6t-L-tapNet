@@ -112,6 +112,7 @@ def main():
         if opt.mask_transition and opt.task == 'sl':
             opt.test_label_mask = None
 
+
     ''' over fitting test '''
     if opt.do_overfit_test:
         test_features, test_label2id, test_id2label = train_features, train_label2id, train_id2label

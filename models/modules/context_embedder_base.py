@@ -387,7 +387,7 @@ class NormalContextEmbedder(ContextEmbedderBase):
 class BilstmContextEmbedder(NormalContextEmbedder):
     def __init__(self, opt, num_token):
         super(BilstmContextEmbedder, self).__init__(opt, num_token)
-        self.BilstmEncoder = torch.nn.LSTM(input_size=opt.embedding_dim,
+        self.BilstmEncoder = torch.nn.LSTM(input_size=opt.emb_dim,
                                             hidden_size=opt.hidden_size*2,
                                             bias=True,
                                             batch_first=True,
@@ -396,11 +396,11 @@ class BilstmContextEmbedder(NormalContextEmbedder):
     
     def forward(self,
                 token_ids,
-                token_masks,
                 slot_names,
                 slot_names_mask,
                 slot_vals,
-                slot_vals_mask):
+                slot_vals_mask,
+                label_ids):
         """
         token_ids: (batch_size x seq_len)
         slot_names: (batch_size x label_size x max_name_len)
@@ -408,6 +408,7 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         slot_vals: (batch_size x label_size x val_num x max_val_len)
         slot_vals_mask: (batch_size x label_size x val_num x max_val_len)
         """
+        print('ok')
         batch_size = token_ids.size(0)
         label_size = slot_names_mask.size(1)
         val_num = slot_vals.size(2)
