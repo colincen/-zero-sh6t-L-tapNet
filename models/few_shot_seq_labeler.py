@@ -236,7 +236,13 @@ class SchemaFewShotSeqLabeler(FewShotSeqLabeler):
         logits = emission
 
         # block pad of label_id = 0, so all label id sub 1. And relu is used to avoid -1 index
+
+        print(test_target)
+
         test_target = torch.nn.functional.relu(test_target - 1)
+
+        print(test_target)
+
 
         loss, prediction = torch.FloatTensor([0]).to(test_target.device), None
         # todo: Design new transition here

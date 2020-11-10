@@ -135,6 +135,7 @@ class ZeroShotExample(object):
         self.gid = gid
         self.input_item = InputItem
     
+
     def __str__(self):
         return self.__repr__()
     

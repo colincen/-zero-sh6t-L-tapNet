@@ -20,12 +20,36 @@ def process_data_by_intent():
         for line in open(raw_path + '/label', 'r'):
             label.append(line.strip())    
         assert len(seq_in) == len(seq_out) and len(seq_out) == len(label)
+        # print(seq_in[0])
+        # print('-----------------')
+        # print(len(seq_out))
+        # print(seq_in)
+        # print(seq_out)
+        # print('-'*10)
         for i in range(len(label)):
+            
+            # aa = seq_in[i].split()
+            # bb = seq_out[i].split()
+            # print(aa)
+            # print(bb)
+            # # print('-'*20)
+            # break
+            # if len(aa) != len(bb):
+            # #     if i > 1: 
+            # #         break
+            #     print(aa)
+            #     print(bb)
+            #     break
+
+            #     print(seq_in)
+            #     print(seq_out)
+            #     print('-'*10)
+
             if(label[i] not in domain):
-                domain[label[i]] = {'seq_in':[seq_in[i].split(' ')],'seq_out':[seq_out[i].split(' ')]}
+                domain[label[i]] = {'seq_in':[seq_in[i].split()],'seq_out':[seq_out[i].split()]}
             else:
-                domain[label[i]]['seq_in'].append(seq_in[i].split(' '))
-                domain[label[i]]['seq_out'].append(seq_out[i].split(' '))
+                domain[label[i]]['seq_in'].append(seq_in[i].split())
+                domain[label[i]]['seq_out'].append(seq_out[i].split())
     return domain
 
 def paired_slot_name_and_val(domain: dict):

@@ -108,6 +108,15 @@ class TrainerBase:
         is_convergence = False
 
         model.train()
+
+        # for line in train_features:
+        #     # print(line)
+        #     token_size= line._token_ids().size()
+        #     label_size = line._label_ids().size()
+        #     print(token_size)
+        #     print(label_size)
+        #     print('-'*10)
+
         dataset = self.get_dataset(train_features)
         sampler = self.get_sampler(dataset)
         data_loader = self.get_data_loader(dataset, sampler)
@@ -117,8 +126,9 @@ class TrainerBase:
                 if self.n_gpu == 1:
                     batch = tuple(t.to(self.device) for t in batch)  # multi-gpu does scattering it-self
                 ''' loss '''
+                print(batch)
                 loss = self.do_forward(batch, model, epoch_id, step)
-                return 0, 0, 0
+                
                 loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
                 loss.backward()
 
@@ -130,6 +140,7 @@ class TrainerBase:
 
                 ''' model selection '''
                 if self.time_to_make_check_point(total_step, data_loader):
+                    return 0,0,0
                     if self.tester and self.opt.eval_when_train:  # this is not suit for training big model
                         print("Start dev eval.")
                         dev_score, test_score, copied_best_model = self.model_selection(

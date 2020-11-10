@@ -256,7 +256,7 @@ do
                                                             --label_trans_scale_r ${trans_scale_r} \
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
-                                                            --load_feature 
+                                                            # --load_feature 
                                                             # > /home_export/sh/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}

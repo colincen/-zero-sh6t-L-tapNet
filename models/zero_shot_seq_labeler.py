@@ -6,6 +6,7 @@ from models.modules.emission_scorer_base import EmissionScorerBase
 from models.modules.transition_scorer import TransitionScorerBase
 from models.modules.seq_labeler import SequenceLabeler
 from models.modules.conditional_random_field import ConditionalRandomField
+from utils.iter_helper import pad_tensor    
 
 class ZeroShotSeqLabeler(torch.nn.Module):
     def __init__(self,
@@ -37,6 +38,8 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         pad_slot_vals_mask = self.context_embedder(token_ids, slot_names,\
                                     slot_names_mask, slot_vals, slot_vals_mask)
         
+        
+
         emission = self.emission_scorer(token_reps, token_masks, pad_slot_names_reps, \
                                         pad_slot_names_mask,pad_slot_vals_reps, \
                                         pad_slot_vals_mask, label_ids)
@@ -50,5 +53,32 @@ class ZeroShotSeqLabeler(torch.nn.Module):
 
         logits = emission
 
-        return 0
+        label_mask = (torch.zeros(label_ids.size(), device=label_ids.device).type_as(label_ids) == label_ids)
+        label_mask = (label_mask == 0)
+        label_mask = label_mask.byte()
+
+
+        # print(label_ids)
+        label_ids = torch.nn.functional.relu(label_ids - 1)
+        loss, prediction = torch.FloatTensor([0]).to(label_ids.device), None
+
+
+
+        # print(label_ids)
+        # print(label_mask)
+
+        if self.training:
+            loss = self.decoder.forward(logits=logits,
+                                        tags=label_ids,
+                                        mask=label_mask)
+
+        else:
+            prediction = self.decoder.decode(logits=logits, masks=label_mask)
+        
+
+        if self.training:
+            return loss
+        else:
+            return prediction
+    
     

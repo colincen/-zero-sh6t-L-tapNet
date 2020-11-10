@@ -763,6 +763,12 @@ class ZeroShotFeature(object):
         self.modelInput = modelInput
         self.label_ids = label_ids
 
+    # def _label_ids(self):
+    #     return self.label_ids
+    
+    # def _token_ids(self):
+    #     return self.modelInput.token_ids
+
     def __str__(self):
         return self.__repr__()
 
@@ -786,6 +792,8 @@ class ZeroShotFeatureConstructor:
     ):
         all_features = []
         for example in examples:
+            print(example.utterance)
+            print(example.labels)
             feature = self.example2feature(example, label2id)
             all_features.append(feature)
 
