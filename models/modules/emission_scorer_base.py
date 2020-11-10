@@ -265,4 +265,26 @@ class TapNetEmissionScorer(EmissionScorerBase):
         if self.scaler:
             emission = self.scaler(emission, p=3, dim=-1)
         return emission
+ 
 
+class LabelEmbeddingEmissionScorer(EmissionScorerBase):
+    def __init__(self, similarity_scorer, scaler: ScaleControllerBase = None):
+        super(LabelEmbeddingEmissionScorer, self).__init__(similarity_scorer, scaler)
+
+    def forward(self,
+                token_reps, 
+                token_masks, 
+                pad_slot_names_reps, 
+                pad_slot_names_mask,
+                pad_slot_vals_reps, 
+                pad_slot_vals_mask,
+                label_ids):
+
+        similarity = self.similarity_scorer(token_reps, token_masks, pad_slot_names_reps, \
+                                            pad_slot_names_mask,pad_slot_vals_reps, 
+                                            pad_slot_vals_mask)
+        
+
+        emission = self.scaler(similarity, p = 3, dim=-1)    
+
+        return emission

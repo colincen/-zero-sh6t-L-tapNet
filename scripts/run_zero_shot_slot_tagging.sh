@@ -67,8 +67,9 @@ embedder=bilstm
 embedding_dim=300
 hidden_size=384
 
+emission_lst=(labelembedding)
 #emission_lst=(mnet)
-emission_lst=(tapnet)
+# emission_lst=(tapnet)
 #emission_lst=(proto_with_label)
 #emission_lst=(proto)
 #emission_lst=(mnet proto)
@@ -111,8 +112,8 @@ emb_log=
 
 # ------ decoder setting -------
 #decoder_lst=(rule)
-#decoder_lst=(sms)
-decoder_lst=(crf)
+decoder_lst=(sms)
+# decoder_lst=(crf)
 #decoder_lst=(crf sms)
 
 transition=learn

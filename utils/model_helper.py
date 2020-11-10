@@ -10,10 +10,10 @@ from models.modules.context_embedder_base import ContextEmbedderBase, BertContex
     BertSeparateContextEmbedder, NormalContextEmbedder, BertSchemaContextEmbedder, BertSchemaSeparateContextEmbedder, \
     ElectraContextEmbedder, ElectraSchemaContextEmbedder, BilstmContextEmbedder
 from models.modules.similarity_scorer_base import SimilarityScorerBase, MatchingSimilarityScorer, \
-    PrototypeSimilarityScorer, ProtoWithLabelSimilarityScorer, TapNetSimilarityScorer, \
+    PrototypeSimilarityScorer, ProtoWithLabelSimilarityScorer, TapNetSimilarityScorer, LabelEmbeddingSimilarityScorer, \
     reps_dot, reps_l2_sim, reps_cosine_sim
 from models.modules.emission_scorer_base import EmissionScorerBase, MNetEmissionScorer, \
-    PrototypeEmissionScorer, ProtoWithLabelEmissionScorer, TapNetEmissionScorer
+    PrototypeEmissionScorer, ProtoWithLabelEmissionScorer, TapNetEmissionScorer, LabelEmbeddingEmissionScorer
 from models.modules.transition_scorer import FewShotTransitionScorer, FewShotTransitionScorerFromLabel
 from models.modules.seq_labeler import SequenceLabeler, RuleSequenceLabeler
 from models.modules.text_classifier import SingleLabelTextClassifier
@@ -71,8 +71,7 @@ def make_model(opt, config):
 
 
 
-    seq_labeler = ZeroShotSeqLabeler(opt=opt, context_embedder = context_embedder)
-    return seq_labeler
+    
 
 
     ''' Create log file to record testing data '''
@@ -119,8 +118,19 @@ def make_model(opt, config):
             mlp=opt.tap_mlp, emb_log=emb_log, tap_proto=opt.tap_proto, tap_proto_r=opt.tap_proto_r,
             anchor_dim=anchor_dim)
         emission_scorer = TapNetEmissionScorer(similarity_scorer, ems_scaler)
+    elif opt.emission == 'labelembedding':
+        similarity_scorer = LabelEmbeddingSimilarityScorer(sim_func=sim_func, emb_log=emb_log)
+        emission_scorer = LabelEmbeddingEmissionScorer(similarity_scorer, ems_scaler)
     else:
         raise TypeError('wrong component type')
+
+
+    
+    # seq_labeler = ZeroShotSeqLabeler(opt=opt, context_embedder = context_embedder, emission_scorer=emission_scorer)
+    
+    # return seq_labeler
+
+
 
     ''' Build decoder '''
     if opt.task == 'sl': # for sequence labeling
@@ -162,6 +172,9 @@ def make_model(opt, config):
             raise TypeError('wrong component type')
     elif opt.task == 'sc':  # for single-label text classification task
         decoder = SingleLabelTextClassifier()
+    elif opt.task == 'zero-shot':
+        if opt.decoder == 'sms':
+            decoder = SequenceLabeler()
     else:
         raise TypeError('wrong task type')
 
@@ -187,6 +200,18 @@ def make_model(opt, config):
             config=config,
             emb_log=emb_log
         )
+    elif opt.task == 'zero-shot':
+        seq_labeler = ZeroShotSeqLabeler
+        model = seq_labeler(
+            opt=opt,
+            context_embedder=context_embedder,
+            emission_scorer=emission_scorer,
+            decoder=decoder,
+            config=config,
+            emb_log=emb_log
+        )
+    
+    
     else:
         raise TypeError('wrong task type')
     return model

@@ -156,7 +156,7 @@ def model_args(parser):
 
     # ===== emission layer setting =========
     group.add_argument("--emission", default='mnet', type=str,
-                       choices=['mnet', 'rank', 'proto', 'proto_with_label', 'tapnet'],
+                       choices=['mnet', 'rank', 'proto', 'proto_with_label', 'tapnet', 'labelembedding'],
                        help="Method for calculate emission score")
     group.add_argument("-e_nm", "--emission_normalizer", type=str, default='', choices=['softmax', 'norm', 'none'],
                        help="normalize emission into 1-0")

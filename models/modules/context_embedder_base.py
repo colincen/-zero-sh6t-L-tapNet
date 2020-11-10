@@ -461,8 +461,23 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         slot_names_reps, _ = self.BilstmEncoder(slot_names_packed)
         slot_names_reps, _ = rnn_utils.pad_packed_sequence(slot_names_reps, batch_first=True)
         slot_names_reps = self.Dropout(slot_names_reps)
-
+        
+        #######################
         slot_names_reps = torch.sum(slot_names_reps, -2)
+
+        '''
+        several ways
+        * sum the embedding
+        * mean the sum of embedding
+        * l2 norm the mean
+        '''
+        # print(slot_names_length)
+        # print(slot_names_reps.size())   
+
+        # print(slot_names_reps)
+        slot_names_reps = torch.div(slot_names_reps, slot_names_length.unsqueeze(-1))
+        # print(slot_names_reps)
+        ################################
 
         
         output_dim = slot_names_reps.size(1)
@@ -495,7 +510,22 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         slot_vals_reps, _ = rnn_utils.pad_packed_sequence(slot_vals_reps, batch_first=True)
         slot_vals_reps = self.Dropout(slot_vals_reps)
 
+        ####################################
+
         slot_vals_reps = torch.sum(slot_vals_reps, -2)
+        
+        '''
+        several ways
+        * sum the embedding
+        * mean the sum of embedding
+        * l2 norm the mean
+        '''
+        # print(slot_vals_reps)
+        slot_vals_reps = torch.div(slot_vals_reps, slot_vals_length.unsqueeze(-1))
+        # print(slot_vals_reps)
+        # print(slot_vals_reps.size())
+
+        #####################################
 
         output_dim = slot_vals_reps.size(1)
         pad_slot_vals_reps = torch.zeros(size=(batch_size * label_size * val_num, output_dim), device=token_ids.device)
