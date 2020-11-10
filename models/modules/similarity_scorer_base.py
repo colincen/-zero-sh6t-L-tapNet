@@ -473,3 +473,6 @@ class TapNetSimilarityScorer(SimilarityScorerBase):
 
         """
         return my_tensor + 0.0001
+
+class LabelEmbeddingSimilarityScorer(SimilarityScorerBase):
+    pass

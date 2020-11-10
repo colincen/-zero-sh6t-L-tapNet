@@ -19,6 +19,7 @@ from models.modules.seq_labeler import SequenceLabeler, RuleSequenceLabeler
 from models.modules.text_classifier import SingleLabelTextClassifier
 from models.modules.conditional_random_field import ConditionalRandomField, allowed_transitions
 
+from models.zero_shot_seq_labeler import ZeroShotSeqLabeler
 from models.few_shot_seq_labeler import FewShotSeqLabeler, SchemaFewShotSeqLabeler
 from models.few_shot_text_classifier import FewShotTextClassifier, SchemaFewShotTextClassifier
 
@@ -64,14 +65,15 @@ def make_model(opt, config):
     elif opt.context_emb == 'bilstm':
         context_embedder = BilstmContextEmbedder(opt=opt, num_token=len(opt.word2id))
         context_embedder.load_embedding()
-
-
-        return context_embedder
-
-
-
+  
     else:
         raise TypeError('wrong component type')
+
+
+
+    seq_labeler = ZeroShotSeqLabeler(opt=opt, context_embedder = context_embedder)
+    return seq_labeler
+
 
     ''' Create log file to record testing data '''
     if opt.emb_log:
