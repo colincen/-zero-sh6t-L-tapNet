@@ -33,6 +33,16 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         slot_vals_mask,
         label_ids):
 
+
+
+
+
+
+
+      
+        
+
+
         token_reps, token_masks, pad_slot_names_reps, \
         pad_slot_names_mask,pad_slot_vals_reps, \
         pad_slot_vals_mask = self.context_embedder(token_ids, slot_names,\
@@ -52,17 +62,24 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         # batch_size x label_size x val_num
 
         logits = emission
-
+       
         label_mask = (torch.zeros(label_ids.size(), device=label_ids.device).type_as(label_ids) == label_ids)
         label_mask = (label_mask == 0)
         label_mask = label_mask.byte()
 
 
-        # print(label_ids)
-        label_ids = torch.nn.functional.relu(label_ids - 1)
+        
+        # label_ids = torch.nn.functional.relu(label_ids - 1)
         loss, prediction = torch.FloatTensor([0]).to(label_ids.device), None
 
-
+        print(token_ids)
+        print('\n')
+        print(label_ids)
+        print('\n')
+        print(logits.argmax(-1))
+        print('\n')
+        print(label_mask)
+        print('-'*20)
 
         # print(label_ids)
         # print(label_mask)

@@ -792,8 +792,7 @@ class ZeroShotFeatureConstructor:
     ):
         all_features = []
         for example in examples:
-            print(example.utterance)
-            print(example.labels)
+
             feature = self.example2feature(example, label2id)
             all_features.append(feature)
 

@@ -145,6 +145,9 @@ def main():
             opt = training_model.opt
             opt.warmup_epoch = -1
         else:
+            print(train_label2id)
+            fr = open('word2id.json','w')
+            json.dump(train_label2id, fr)
             training_model = make_model(opt, config={'num_tags': len(train_label2id)})
         training_model = prepare_model(opt, training_model, device, n_gpu)
     #     if opt.mask_transition and opt.task == 'sl':

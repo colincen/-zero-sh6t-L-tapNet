@@ -498,8 +498,11 @@ class LabelEmbeddingSimilarityScorer(SimilarityScorerBase):
         # batch_size x label_size x val_num x emb_size
         # batch_size x label_size x val_num
 
+        # print(token_reps.size())
+        # print(pad_slot_names_reps.size())
+
         sim_score = self.sim_func(token_reps, pad_slot_names_reps)
 
-        sim_score = self.mask_sim(sim_score, token_masks, pad_slot_names_mask)
+        # sim_score = self.mask_sim(sim_score, token_masks, pad_slot_names_mask)
 
         return sim_score

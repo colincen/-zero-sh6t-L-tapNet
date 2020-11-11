@@ -80,9 +80,11 @@ emission_normalizer=none
 #emission_normalizer=softmax
 #emission_normalizer=norm
 
+
+emission_scaler=softmax
 #emission_scaler=none
 #emission_scaler=fix
-emission_scaler=learn
+# emission_scaler=learn
 #emission_scaler=relu
 #emission_scaler=exp
 

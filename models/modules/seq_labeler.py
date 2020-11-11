@@ -34,9 +34,9 @@ class SequenceLabeler(torch.nn.Module):
         :return:
         """
 
-        print(logits.size())
-        print(mask.size())
-        print(targets.size())
+        # print(logits.size())
+        # print(mask.size())
+        # print(targets.size())
 
         batch_size, seq_len = mask.shape
         normalised_emission = masked_log_softmax(logits, mask.unsqueeze(-1), dim=-1)

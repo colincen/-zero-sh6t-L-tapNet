@@ -126,9 +126,9 @@ class TrainerBase:
                 if self.n_gpu == 1:
                     batch = tuple(t.to(self.device) for t in batch)  # multi-gpu does scattering it-self
                 ''' loss '''
-                print(batch)
-                loss = self.do_forward(batch, model, epoch_id, step)
                 
+                loss = self.do_forward(batch, model, epoch_id, step)
+                print(loss)
                 loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
                 loss.backward()
 
