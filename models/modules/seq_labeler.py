@@ -136,6 +136,49 @@ class RuleSequenceLabeler(SequenceLabeler):
             ret.append(temp)
         return ret
 
+class SchemaSequenceLabeler(SequenceLabeler):
+    def __init__(self):
+        super(SchemaSequenceLabeler, self).__init__()    
+    
+    def forward(self,
+                logits: torch.Tensor,
+                mask: torch.Tensor,
+                tags: torch.Tensor) -> Tuple[Union[None, torch.Tensor],
+                                             Union[None, torch.Tensor]]:
+        """
+
+        :param logits: (batch_size, seq_len, n_tags)
+        :param mask: (batch_size, label_size)
+        :param tags: (batch_size, seq_len)
+        :return:
+        """
+        return self._compute_loss(logits, mask, tags)
+
+    def _compute_loss(self,
+                      logits: torch.Tensor,
+                      mask: torch.Tensor,
+                      targets: torch.Tensor) -> torch.Tensor:
+        """
+
+        :param logits:
+        :param mask:
+        :param targets:
+        :return:
+        """
+
+        # print(logits.size())
+        # print(mask.size())
+        # print(targets.size())
+
+        batch_size = logits.size(0)
+
+        mask = mask.repeat(1, logits.size(1), 1)
+        logits = masked_log_softmax(logits, mask, -1)
+
+        loss = logits.gather(dim=-1, index=targets.unsqueeze(-1))
+
+        return -1 * loss.sum() / batch_size
+
 
 def unit_test():
     logits = torch.tensor([[[0.1, 0.2, 0.5, 0.7, 0.3], [1.2, 0.8, 0.5, 0.6, 0.1], [0.4, 0.5, 0.5, 0.9, 1.2]],

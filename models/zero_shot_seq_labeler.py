@@ -41,8 +41,8 @@ class ZeroShotSeqLabeler(torch.nn.Module):
                                     slot_names_mask, slot_vals, slot_vals_mask)
         
         
-        # print(token_ids.size())
-        # print(token_masks.size())
+        # print(token_ids)
+        # print(token_masks)
         # print(pad_slot_names_reps.size())
         # print(pad_slot_names_mask.size())
         # print(pad_slot_vals_reps.size())
@@ -64,14 +64,14 @@ class ZeroShotSeqLabeler(torch.nn.Module):
 
         # logits = emission
 
-        batch_size = token_ids.size(0)
+       
 
         slot_names_mask = slot_names_mask.sum(-1)
         slot_names_mask = (slot_names_mask > 0)
         slot_names_mask = slot_names_mask.unsqueeze(-2)
 
         # print(slot_names_mask.size())
-        slot_names_mask = slot_names_mask.repeat(1, emission.size(1), 1)
+        # slot_names_mask = slot_names_mask.repeat(1, emission.size(1), 1)
         # print(slot_names_mask.size())
         # print(emission.size())
         
@@ -82,10 +82,9 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         # print(slot_names_mask[2])
         # print(slot_names_mask[3])
 
-
+        '''
         logits = masked_log_softmax(emission,slot_names_mask, -1)
 
-        # print(logits.argmax(-1))
 
         print(token_ids)
         print(label_ids)
@@ -94,6 +93,8 @@ class ZeroShotSeqLabeler(torch.nn.Module):
 
         loss = logits.gather(dim=-1, index=label_ids.unsqueeze(-1))
         return -1 * loss.sum() / batch_size
+        '''
+
         # print(logits.size())
         # return loss
 
@@ -120,22 +121,23 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         # print(label_ids)
         # print(label_mask)
 
-        # if self.training:
+        if self.training:
             
         #     # logits = logits.view(logits.size(0) * logits.size(1), -1)
         #     # label_ids = label_ids.view(-1)
         #     # loss = loss_func(logits, label_ids)
-        #     loss = self.decoder.forward(logits=logits,
-        #                                 tags=label_ids,
-        #                                 mask=label_mask)
+            loss = self.decoder.forward(logits=emission,
+                                        tags=label_ids,
+                                        mask=slot_names_mask)
 
-        # else:
-        #     prediction = self.decoder.decode(logits=logits, masks=label_mask)
+
+        else:
+            prediction = self.decoder.decode(logits=emission, masks=token_masks)
         
 
-        # if self.training:
-        #     return loss
-        # else:
-        #     return prediction
+        if self.training:
+            return loss
+        else:
+            return prediction
     
     

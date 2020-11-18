@@ -15,7 +15,7 @@ from models.modules.similarity_scorer_base import SimilarityScorerBase, Matching
 from models.modules.emission_scorer_base import EmissionScorerBase, MNetEmissionScorer, \
     PrototypeEmissionScorer, ProtoWithLabelEmissionScorer, TapNetEmissionScorer, LabelEmbeddingEmissionScorer
 from models.modules.transition_scorer import FewShotTransitionScorer, FewShotTransitionScorerFromLabel
-from models.modules.seq_labeler import SequenceLabeler, RuleSequenceLabeler
+from models.modules.seq_labeler import SequenceLabeler, RuleSequenceLabeler, SchemaSequenceLabeler
 from models.modules.text_classifier import SingleLabelTextClassifier
 from models.modules.conditional_random_field import ConditionalRandomField, allowed_transitions
 
@@ -63,7 +63,7 @@ def make_model(opt, config):
     elif opt.context_emb == 'raw':
         context_embedder = NormalContextEmbedder(opt=opt, num_token=len(opt.word2id))
     elif opt.context_emb == 'bilstm':
-        context_embedder = BilstmContextEmbedderOnlyNames(opt=opt, num_token=len(opt.word2id))
+        context_embedder = BilstmContextEmbedder(opt=opt, num_token=len(opt.word2id))
         context_embedder.load_embedding()
   
     else:
@@ -174,7 +174,7 @@ def make_model(opt, config):
         decoder = SingleLabelTextClassifier()
     elif opt.task == 'zero-shot':
         if opt.decoder == 'sms':
-            decoder = SequenceLabeler()
+            decoder = SchemaSequenceLabeler()
     else:
         raise TypeError('wrong task type')
 

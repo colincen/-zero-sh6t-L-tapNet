@@ -399,17 +399,17 @@ class BilstmContextEmbedder(NormalContextEmbedder):
                                             batch_first=True,
                                             bidirectional=True)
 
-        self.BilstmEncoder2 = torch.nn.LSTM(input_size=opt.emb_dim,
-                                            hidden_size=opt.hidden_size,
-                                            bias=True,
-                                            batch_first=True,
-                                            bidirectional=True)
+        # self.BilstmEncoder2 = torch.nn.LSTM(input_size=opt.emb_dim,
+        #                                     hidden_size=opt.hidden_size,
+        #                                     bias=True,
+        #                                     batch_first=True,
+        #                                     bidirectional=True)
         
-        self.BilstmEncoder3 = torch.nn.LSTM(input_size=opt.emb_dim,
-                                            hidden_size=opt.hidden_size,
-                                            bias=True,
-                                            batch_first=True,
-                                            bidirectional=True)
+        # self.BilstmEncoder3 = torch.nn.LSTM(input_size=opt.emb_dim,
+        #                                     hidden_size=opt.hidden_size,
+        #                                     bias=True,
+        #                                     batch_first=True,
+        #                                     bidirectional=True)
 
 
         self.Dropout = torch.nn.Dropout(0.5)
@@ -474,11 +474,17 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         
 
         slot_names_reps = self.embedding_layer(slot_names_merge)
+        #############################
+        ## lstm or embedding
 
-        slot_names_packed = rnn_utils.pack_padded_sequence(slot_names_reps, slot_names_length, batch_first=True, enforce_sorted=False)
-        slot_names_reps, _ = self.BilstmEncoder2(slot_names_packed)
-        slot_names_reps, _ = rnn_utils.pad_packed_sequence(slot_names_reps, batch_first=True)
-        slot_names_reps = self.Dropout(slot_names_reps)
+        # slot_names_packed = rnn_utils.pack_padded_sequence(slot_names_reps, slot_names_length, batch_first=True, enforce_sorted=False)
+        # slot_names_reps, _ = self.BilstmEncoder2(slot_names_packed)
+        # slot_names_reps, _ = rnn_utils.pad_packed_sequence(slot_names_reps, batch_first=True)
+        # slot_names_reps = self.Dropout(slot_names_reps)
+
+      
+
+        ##############################
         
         #######################
         slot_names_reps = torch.sum(slot_names_reps, -2)
@@ -523,10 +529,16 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         slot_vals_length = slot_vals_length[domain_slot_vals_index]
         slot_vals_reps = self.embedding_layer(slot_vals_merge)
 
-        slot_vals_packed = rnn_utils.pack_padded_sequence(slot_vals_reps, slot_vals_length, batch_first=True, enforce_sorted=False)
-        slot_vals_reps, _ = self.BilstmEncoder3(slot_vals_packed)
-        slot_vals_reps, _ = rnn_utils.pad_packed_sequence(slot_vals_reps, batch_first=True)
-        slot_vals_reps = self.Dropout(slot_vals_reps)
+        ##################################
+
+        ## lstm or embedding
+
+        # slot_vals_packed = rnn_utils.pack_padded_sequence(slot_vals_reps, slot_vals_length, batch_first=True, enforce_sorted=False)
+        # slot_vals_reps, _ = self.BilstmEncoder3(slot_vals_packed)
+        # slot_vals_reps, _ = rnn_utils.pad_packed_sequence(slot_vals_reps, batch_first=True)
+        # slot_vals_reps = self.Dropout(slot_vals_reps)
+
+        ###################################
 
         ####################################
 
@@ -645,6 +657,7 @@ class BilstmContextEmbedderOnlyNames(NormalContextEmbedder):
         # print(slot_names_reps.size())   
 
         # print(slot_names_reps)
+
         slot_names_reps = torch.div(slot_names_reps, slot_names_length.unsqueeze(-1) + 0.0001)
         # print(slot_names_reps)
         ################################

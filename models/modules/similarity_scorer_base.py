@@ -501,7 +501,7 @@ class LabelEmbeddingSimilarityScorer(SimilarityScorerBase):
         # batch_size x label_size x val_num
 
 
-        # no_pad_slot_vals_reps = torch.mean(no_pad_slot_vals_reps, -2)
+        no_pad_slot_vals_reps = torch.mean(no_pad_slot_vals_reps, -2)
        
 
 
