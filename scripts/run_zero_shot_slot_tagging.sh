@@ -49,7 +49,7 @@ fix_embd_epoch_lst=(-1)
 warmup_epoch=1
 
 
-train_batch_size_lst=(4)
+train_batch_size_lst=(16)
 test_batch_size=4
 grad_acc=2
 #grad_acc=4  # if the GPU-memory is not enough, use bigger gradient accumulate
@@ -65,7 +65,7 @@ embedding_cache=/home_export/sh
 embedder=bilstm
 #embedder=sep_bert
 embedding_dim=300
-hidden_size=384
+hidden_size=300
 
 emission_lst=(labelembedding)
 #emission_lst=(mnet)
@@ -258,7 +258,7 @@ do
                                                             --label_trans_scale_r ${trans_scale_r} \
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
-                                                            # --load_feature 
+                                                            --load_feature 
                                                             # > /home_export/sh/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}

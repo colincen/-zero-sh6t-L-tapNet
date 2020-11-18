@@ -267,6 +267,8 @@ class TapNetEmissionScorer(EmissionScorerBase):
         return emission
  
 
+
+
 class LabelEmbeddingEmissionScorer(EmissionScorerBase):
     def __init__(self, similarity_scorer, scaler: ScaleControllerBase = None):
         super(LabelEmbeddingEmissionScorer, self).__init__(similarity_scorer, scaler)
@@ -280,10 +282,36 @@ class LabelEmbeddingEmissionScorer(EmissionScorerBase):
                 pad_slot_vals_mask,
                 label_ids):
 
-        similarity = self.similarity_scorer(token_reps, token_masks, pad_slot_names_reps, \
-                                            pad_slot_names_mask,pad_slot_vals_reps, 
-                                            pad_slot_vals_mask)
+
+
+        # no_pad_slot_names_mask = torch.narrow(pad_slot_names_mask, 1, 1, pad_slot_names_mask.size(1)-1)
+        # pad_slot_names_mask = None
+
+
+        # print(token_reps.size())
+        # print(token_masks.size())
+        # print(pad_slot_names_reps.size())
+        # print(pad_slot_names_mask.size())
+        # print(pad_slot_vals_reps.size())
+        # print(pad_slot_vals_mask.size())
+        # print('-'*20)
+
+        # fwd_token_reps, bcw_token_reps = torch.split(token_reps, int(token_reps.size(-1) /2), -1)
         
+        similarity = self.similarity_scorer(token_reps, token_masks, pad_slot_names_reps, pad_slot_names_mask,\
+                                            pad_slot_vals_reps, pad_slot_vals_mask)
+
+        # fwd_similarity = self.similarity_scorer(fwd_token_reps, token_masks, pad_slot_names_reps, \
+        #                                     pad_slot_names_mask, pad_slot_vals_reps, 
+        #                                     pad_slot_vals_mask)
+
+        # bcw_similarity = self.similarity_scorer(bcw_token_reps, token_masks, pad_slot_names_reps, \
+        #                                     pad_slot_names_mask, pad_slot_vals_reps, 
+        #                                     pad_slot_vals_mask)
+
+        # similarity = fwd_similarity + bcw_similarity
+
+        emission = similarity
 
         emission = self.scaler(similarity, p = 3, dim=-1)    
 

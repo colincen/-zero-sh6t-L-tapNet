@@ -539,16 +539,32 @@ class NormalInputBuilderForZeroShot(object):
     def __init__(self, tokenizer, opt):
         self.tokenizer = tokenizer
         self.opt = opt
+        # self.Temp = 0
             
     def __call__(self, example, label2id, max_val_len=10) -> ZeroShotModelInput:
         # print(example.input_item.seq_in)
         utterance = self.prepare_utterance(example.input_item.seq_in)
         # print(utterance)
         slot_names, slot_names_mask = self.prepare_slot_name(example.input_item.slot_names, label2id)
-        # print(slot_names)
+        # self.Temp += 1
+        # if(self.Temp == 5500):
+        #     for i in slot_names:
+        #         print(i)
+
+        #     print('\n')
+
+        #     for i in slot_names_mask:
+        #         print(i)
+
+        # if(self.Temp == None):
+        #     self.Temp = torch.LongTensor(slot_names)
+        # else:
+        #     print(self.Temp == torch.LongTensor(slot_names))
 
         # print(slot_names_mask)
         slot_vals, slot_vals_mask = self.prepare_slot_val(example.input_item.slot_names, example.input_item.slot_vals, label2id, max_val_len)
+
+
         ret =ZeroShotModelInput(
             token_ids=torch.LongTensor(utterance),
             slot_names=torch.LongTensor(slot_names),
@@ -572,14 +588,16 @@ class NormalInputBuilderForZeroShot(object):
         id2label = {v : k for k, v in label2id.items()}
         for idx in range(len(id2label)):
             name = id2label[idx]
-            if name in slot_names or name == 'O' or name == '[PAD]':
+            # res_slot_names.append(self.convert_label_name(name))
+            if name in slot_names or name == 'O':
                 # mask[idx] = 1
                 res_slot_names.append(self.convert_label_name(name))
             else:
                 res_slot_names.append(['[PAD]'])
+        
         res_slot_names, masks =  self.pad(res_slot_names, max_len=6, Type='one_layer')
 
-
+   
 
         res_slot_names_ids = []
         for i in res_slot_names:
@@ -592,6 +610,9 @@ class NormalInputBuilderForZeroShot(object):
 
         # print(len(res_slot_names_ids))
         # print(len(masks))
+        # print(label2id)
+        # print(mask)
+        # print(masks)
         return res_slot_names_ids, masks
        
     def prepare_slot_val(self, slot_names, slot_vals, label2id, max_val_len):
@@ -709,7 +730,7 @@ class NormalInputBuilderForZeroShot(object):
         if tmp_name:
             for shot, long in name_translations:
                 if tmp_name == shot:
-                    text.append(long)
+                    text.extend(long.split())
                     tmp_name = ''
                     break
         if tmp_name:
@@ -766,8 +787,8 @@ class ZeroShotFeature(object):
     # def _label_ids(self):
     #     return self.label_ids
     
-    # def _token_ids(self):
-    #     return self.modelInput.token_ids
+    # def _slot_names(self):
+    #     return self.modelInput
 
     def __str__(self):
         return self.__repr__()
@@ -790,11 +811,31 @@ class ZeroShotFeatureConstructor:
         examples,
         label2id,
     ):
+
         all_features = []
         for example in examples:
-
+            
             feature = self.example2feature(example, label2id)
             all_features.append(feature)
+
+
+        # temp = None
+        # print('-'*20)
+        # print(len(all_features))
+        # m = 0
+        # for i in  range(len(all_features)):
+        #     if temp == None:
+        #         temp = vars(all_features[i])['modelInput'].slot_names
+                
+        #     else:
+        #         t = (temp == vars(all_features[i])['modelInput'].slot_names).byte()
+        #         t = 1 - t
+        #         t= t.sum()
+        #         if t.long() > 0:
+        #             m += 1
+        # print(m)
+
+
 
         return all_features
     
@@ -804,7 +845,9 @@ class ZeroShotFeatureConstructor:
         label2id,
     ):
         Input = self.input_builder(example, label2id, max_val_len = 10)
+
         Output = self.output_builder(example, label2id)
+
         ret = ZeroShotFeature(
             gid=example.gid,
             modelInput=Input,
@@ -875,7 +918,7 @@ def make_dict(opt, examples) -> (Dict[str, int], Dict[int, str]):
     else:
         pass
     ''' build dict '''
-    label2id['[PAD]'] = len(label2id)  # '[PAD]' in first position and id is 0
+    # label2id['[PAD]'] = len(label2id)  # '[PAD]' in first position and id is 0
     if opt.task == 'sl' or opt.task == 'zero-shot':
         label2id['O'] = len(label2id)
         for label in label_set:

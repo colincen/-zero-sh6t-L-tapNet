@@ -475,6 +475,8 @@ class TapNetSimilarityScorer(SimilarityScorerBase):
         return my_tensor + 0.0001
 
 
+
+
 class LabelEmbeddingSimilarityScorer(SimilarityScorerBase):
     def __init__(self, sim_func, emb_log=None):
         super(LabelEmbeddingSimilarityScorer, self).__init__(sim_func=sim_func,emb_log=emb_log)
@@ -483,10 +485,10 @@ class LabelEmbeddingSimilarityScorer(SimilarityScorerBase):
         self.log_content = ''
     
     def forward(self, token_reps, token_masks, \
-                pad_slot_names_reps, \
-                pad_slot_names_mask, \
-                pad_slot_vals_reps, \
-                pad_slot_vals_mask):
+                no_pad_slot_names_reps, \
+                no_pad_slot_names_mask, \
+                no_pad_slot_vals_reps, \
+                no_pad_slot_vals_mask):
         
 
         # batch_size x seq_len x emb_size  
@@ -498,10 +500,17 @@ class LabelEmbeddingSimilarityScorer(SimilarityScorerBase):
         # batch_size x label_size x val_num x emb_size
         # batch_size x label_size x val_num
 
-        # print(token_reps.size())
-        # print(pad_slot_names_reps.size())
 
-        sim_score = self.sim_func(token_reps, pad_slot_names_reps)
+        no_pad_slot_vals_reps = torch.mean(no_pad_slot_vals_reps, -2)
+        # no_pad_slot_vals_reps = torch.div()
+
+
+
+
+        sim_score_name = self.sim_func(token_reps, no_pad_slot_names_reps)
+        sim_score_val = self.sim_func(token_reps, no_pad_slot_vals_reps)
+
+        sim_score = sim_score_name + sim_score_val
 
         # sim_score = self.mask_sim(sim_score, token_masks, pad_slot_names_mask)
 

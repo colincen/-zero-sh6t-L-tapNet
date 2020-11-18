@@ -153,13 +153,13 @@ class ZeroShotRawDataLoader(RawDataLoaderBase):
     def __init__(self, opt):
         super(ZeroShotRawDataLoader, self).__init__()
         self.opt = opt
+
     def load_data(self, path: str):
         with open(path, 'r') as reader:
             raw_data = json.load(reader)
             examples = self.raw_data2examples(raw_data)
-        return examples
+        return examples    
 
-    
     def raw_data2examples(self, raw_data: dict):
         data_item_lst = self.get_data_items(raw_data)
         examples = []
@@ -181,5 +181,5 @@ class ZeroShotRawDataLoader(RawDataLoaderBase):
 
 if __name__ == "__main__":
     z = ZeroShotRawDataLoader(None)
-    examples = z.load_data('/mnt/sda/f/shdata/zero-shot-dataset/snips_train_1.json')
+    examples = z.load_data('/home_export/sh/zero-shot-dataset/snips_train_1.json')
     print(examples[0])

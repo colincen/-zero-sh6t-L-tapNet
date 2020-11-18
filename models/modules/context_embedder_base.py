@@ -303,6 +303,7 @@ class NormalContextEmbedder(ContextEmbedderBase):
         self.opt = opt
         ''' load bert '''
         self.embedding_layer = torch.nn.Embedding(num_token, opt.emb_dim, padding_idx=0)
+        self.embedding_layer.weight.requires_grad = False
 
     def forward(
             self,
@@ -393,19 +394,19 @@ class BilstmContextEmbedder(NormalContextEmbedder):
     def __init__(self, opt, num_token):
         super(BilstmContextEmbedder, self).__init__(opt, num_token)
         self.BilstmEncoder = torch.nn.LSTM(input_size=opt.emb_dim,
-                                            hidden_size= int (opt.hidden_size / 2),
+                                            hidden_size=opt.hidden_size,
                                             bias=True,
                                             batch_first=True,
                                             bidirectional=True)
 
         self.BilstmEncoder2 = torch.nn.LSTM(input_size=opt.emb_dim,
-                                            hidden_size= int (opt.hidden_size / 2),
+                                            hidden_size=opt.hidden_size,
                                             bias=True,
                                             batch_first=True,
                                             bidirectional=True)
         
         self.BilstmEncoder3 = torch.nn.LSTM(input_size=opt.emb_dim,
-                                            hidden_size= int (opt.hidden_size / 2),
+                                            hidden_size=opt.hidden_size,
                                             bias=True,
                                             batch_first=True,
                                             bidirectional=True)
@@ -554,11 +555,12 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         return token_reps, token_masks, pad_slot_names_reps, \
                 pad_slot_names_mask, pad_slot_vals_reps, pad_slot_vals_mask
         
+
 class BilstmContextEmbedderOnlyNames(NormalContextEmbedder):
     def __init__(self, opt, num_token):
         super(BilstmContextEmbedderOnlyNames, self).__init__(opt, num_token)
         self.BilstmEncoder = torch.nn.LSTM(input_size=opt.emb_dim,
-                                            hidden_size= 150,
+                                            hidden_size= opt.hidden_size,
                                             bias=True,
                                             batch_first=True,
                                             bidirectional=True)
@@ -580,8 +582,12 @@ class BilstmContextEmbedderOnlyNames(NormalContextEmbedder):
         """
         # print('ok')
 
+
+        # print(slot_names)
+
         batch_size = token_ids.size(0)
         label_size = slot_names_mask.size(1)
+        # print(slot_names_mask)
         val_num = slot_vals.size(2)
 
         token_masks = (torch.zeros(token_ids.size()).type_as(token_ids) == token_ids)
@@ -594,9 +600,11 @@ class BilstmContextEmbedderOnlyNames(NormalContextEmbedder):
         token_reps = self.embedding_layer(token_ids)
 
 
+
         token_packed = rnn_utils.pack_padded_sequence(token_reps, token_length, batch_first=True, enforce_sorted=False)
         token_reps, _ = self.BilstmEncoder(token_packed)
         token_reps, _ = rnn_utils.pad_packed_sequence(token_reps, batch_first=True)
+
         token_reps = self.Dropout(token_reps)
         # print(token_reps.size())
 
@@ -607,29 +615,19 @@ class BilstmContextEmbedderOnlyNames(NormalContextEmbedder):
         # (batch_size x label_size, max_name_len)
         slot_names_mask_merge = slot_names_mask.view(batch_size * label_size, -1)
 
-        # batch_size x label_size
-        slot_names_length = torch.sum(slot_names_mask_merge, 1)
-
-        slot_names_index = torch.arange(0, slot_names_length.size(0), device=token_ids.device)
-
-        slot_names_index = slot_names_index[slot_names_length > 0]
-        domain_slot_names_index = slot_names_index.long()
-
-        slot_names_merge = slot_names_merge[domain_slot_names_index, :]
-        
        
 
 
-        pad_slot_names_mask = (slot_names_length > 0).long()
+        # batch_size x label_size
+        slot_names_length = torch.sum(slot_names_mask_merge, 1)
 
+        
 
-
-
-        slot_names_length = slot_names_length[domain_slot_names_index]
         
 
 
 
+        
         slot_names_reps = self.embedding_layer(slot_names_merge)
 
 
@@ -647,24 +645,18 @@ class BilstmContextEmbedderOnlyNames(NormalContextEmbedder):
         # print(slot_names_reps.size())   
 
         # print(slot_names_reps)
-        slot_names_reps = torch.div(slot_names_reps, slot_names_length.unsqueeze(-1))
+        slot_names_reps = torch.div(slot_names_reps, slot_names_length.unsqueeze(-1) + 0.0001)
         # print(slot_names_reps)
         ################################
 
         
-        output_dim = slot_names_reps.size(1)
-        pad_slot_names_reps = torch.zeros(size=(batch_size * label_size, output_dim), device=token_ids.device)
-        pad_slot_names_reps[domain_slot_names_index, :] = slot_names_reps
-        
-        pad_slot_names_reps = pad_slot_names_reps.view(batch_size, label_size, -1)
-        pad_slot_names_mask = pad_slot_names_mask.view(batch_size, label_size)
-        
+        slot_names_reps = slot_names_reps.view(batch_size, label_size, -1)
 
-
+        # print(pad_slot_names_reps)
       
 
-        return token_reps, token_masks, pad_slot_names_reps, \
-                pad_slot_names_mask, None, None
+        return token_reps, token_masks, slot_names_reps, \
+                None, None, None
 
 
 class BertSeparateContextEmbedder(BertContextEmbedder):

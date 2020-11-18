@@ -39,7 +39,13 @@ class SequenceLabeler(torch.nn.Module):
         # print(targets.size())
 
         batch_size, seq_len = mask.shape
+        
+        # print(logits.size())
         normalised_emission = masked_log_softmax(logits, mask.unsqueeze(-1), dim=-1)
+        # print(normalised_emission.size())
+        # print('+'*10)
+
+
         loss = normalised_emission.gather(dim=-1, index=targets.unsqueeze(-1))
         return -1 * loss.sum() / batch_size
 

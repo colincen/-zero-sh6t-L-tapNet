@@ -47,7 +47,6 @@ def pad_tensor(vec: torch.Tensor, pad: int, dim: int) -> torch.Tensor:
     ret = torch.cat([vec, torch.zeros(*pad_size, dtype=vec.dtype)], dim=dim)
     return ret
 
-
 class PadCollate:
     """
     a variant of callate_fn that pads according to the longest sequence in a batch of sequences.

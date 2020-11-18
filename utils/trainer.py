@@ -70,7 +70,8 @@ class TrainerBase:
         self.tester = tester  # for model selection, set 'None' to not select
         self.gradient_accumulation_steps = opt.gradient_accumulation_steps
         # Following is used to split the batch to save space
-        self.batch_size = int(opt.train_batch_size / opt.gradient_accumulation_steps)
+        # self.batch_size = int(opt.train_batch_size / opt.gradient_accumulation_steps)
+        self.batch_size = opt.train_batch_size
         self.device = device
         self.n_gpu = n_gpu
 
@@ -116,10 +117,27 @@ class TrainerBase:
         #     print(token_size)
         #     print(label_size)
         #     print('-'*10)
-
+        # temp = None
+        # print('-'*20)
+        # print(len(train_features))
+        # m = 0
+        # for i in  range(len(train_features)):
+        #     if temp == None:
+        #         temp = vars(train_features[i])['modelInput'].slot_names
+                
+        #     else:
+        #         t = (temp == vars(train_features[i])['modelInput'].slot_names).byte()
+        #         t = 1 - t
+        #         t= t.sum()
+        #         if t.long() > 0:
+        #             m += 1
+        # print(m)
+            # print(vars(train_features[0])['modelInput'].slot_names)
         dataset = self.get_dataset(train_features)
         sampler = self.get_sampler(dataset)
         data_loader = self.get_data_loader(dataset, sampler)
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
         for epoch_id in trange(int(num_train_epochs), desc="Epoch"):
             for step, batch in enumerate(tqdm(data_loader, desc="Train-Batch Progress")):
@@ -128,17 +146,21 @@ class TrainerBase:
                 ''' loss '''
                 
                 loss = self.do_forward(batch, model, epoch_id, step)
+                optimizer.zero_grad()
                 print(loss)
-                loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
+                # loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
                 loss.backward()
-
+                optimizer.step()
+                # model.zero_grad()
                 ''' optimizer step '''
-                global_step, model, is_nan, update_model = self.optimizer_step(step, model, global_step)
-                if is_nan:  # FP16 TRAINING: Nan in gradients, reducing loss scaling
-                    continue
-                total_step += 1
+                # global_step, model, is_nan, update_model = self.optimizer_step(step, model, global_step)
+                # if is_nan:  # FP16 TRAINING: Nan in gradients, reducing loss scaling
+                    # continue
+                # total_step += 1
+                
+                '''
 
-                ''' model selection '''
+                
                 if self.time_to_make_check_point(total_step, data_loader):
                     return 0,0,0
                     if self.tester and self.opt.eval_when_train:  # this is not suit for training big model
@@ -155,7 +177,7 @@ class TrainerBase:
                     else:
                         self.make_check_point_(model=model, step=total_step)
 
-                ''' convergence detection & early stop '''
+                
                 loss_now = loss.item() if update_model else loss.item() + loss_now
                 if self.opt.convergence_window > 0 and update_model:
                     if global_step % 100 == 0 or total_step % len(data_loader) == 0:
@@ -178,6 +200,7 @@ class TrainerBase:
                     break
             if is_convergence:
                 break
+                '''
             print(" --- The {} epoch Finish --- ".format(epoch_id))
 
         return best_model_now, best_dev_score_now, test_score

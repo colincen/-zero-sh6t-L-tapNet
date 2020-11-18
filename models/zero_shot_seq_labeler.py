@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import torch
+from allennlp.nn.util import masked_softmax
 from typing import Tuple, List
 from models.modules.context_embedder_base import ContextEmbedderBase
 from models.modules.emission_scorer_base import EmissionScorerBase
@@ -34,21 +35,21 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         label_ids):
 
 
-
-
-
-
-
-      
-        
-
-
         token_reps, token_masks, pad_slot_names_reps, \
-        pad_slot_names_mask,pad_slot_vals_reps, \
+        pad_slot_names_mask, pad_slot_vals_reps, \
         pad_slot_vals_mask = self.context_embedder(token_ids, slot_names,\
                                     slot_names_mask, slot_vals, slot_vals_mask)
         
         
+        # print(token_ids.size())
+        # print(token_masks.size())
+        # print(pad_slot_names_reps.size())
+        # print(pad_slot_names_mask.size())
+        # print(pad_slot_vals_reps.size())
+        # print(pad_slot_vals_mask.size())
+        # print('-'*20)
+
+
 
         emission = self.emission_scorer(token_reps, token_masks, pad_slot_names_reps, \
                                         pad_slot_names_mask,pad_slot_vals_reps, \
@@ -62,40 +63,59 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         # batch_size x label_size x val_num
 
         logits = emission
-       
-        label_mask = (torch.zeros(label_ids.size(), device=label_ids.device).type_as(label_ids) == label_ids)
-        label_mask = (label_mask == 0)
-        label_mask = label_mask.byte()
+
+        slot_names_mask = slot_names_mask.sum(-1)
+        slot_names_mask = (slot_names_mask > 0)
+        slot_names_mask = slot_names_mask.unsqueeze(-2)
+
+        # print(slot_names_mask.size())
+        slot_names_mask = slot_names_mask.repeat(1, logits.size(1), 1)
+        print(slot_names_mask.size())
+        print(logits.size())
+        
+        
+        # loss = masked_softmax(emission, )
+
+
+        # label_mask = (torch.zeros(label_ids.size(), device=label_ids.device).type_as(label_ids) == label_ids)
+        # label_mask = (label_mask == 0)
+        # label_mask = label_mask.byte()
 
 
         
         # label_ids = torch.nn.functional.relu(label_ids - 1)
-        loss, prediction = torch.FloatTensor([0]).to(label_ids.device), None
+        # loss, prediction = torch.FloatTensor([0]).to(label_ids.device), None
 
-        print(token_ids)
-        print('\n')
-        print(label_ids)
-        print('\n')
-        print(logits.argmax(-1))
-        print('\n')
-        print(label_mask)
-        print('-'*20)
+        # print(token_ids)
+        # print('\n')
+        # print(label_ids)
+        # print('\n')
+        # print(logits.argmax(-1))
+        # print('\n')
+        # # print(logits.size())
+        # print('\n')
+        # print(label_mask)
+        # print('-'*20)
 
         # print(label_ids)
         # print(label_mask)
 
-        if self.training:
-            loss = self.decoder.forward(logits=logits,
-                                        tags=label_ids,
-                                        mask=label_mask)
+        # if self.training:
+            
+        #     # logits = logits.view(logits.size(0) * logits.size(1), -1)
+        #     # label_ids = label_ids.view(-1)
+        #     # loss = loss_func(logits, label_ids)
+        #     loss = self.decoder.forward(logits=logits,
+        #                                 tags=label_ids,
+        #                                 mask=label_mask)
 
-        else:
-            prediction = self.decoder.decode(logits=logits, masks=label_mask)
+        # else:
+        #     prediction = self.decoder.decode(logits=logits, masks=label_mask)
         
 
-        if self.training:
-            return loss
-        else:
-            return prediction
+        # if self.training:
+        #     return loss
+        # else:
+        #     return prediction
     
     
