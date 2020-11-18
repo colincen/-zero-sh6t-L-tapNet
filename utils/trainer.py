@@ -70,7 +70,7 @@ class TrainerBase:
         self.tester = tester  # for model selection, set 'None' to not select
         self.gradient_accumulation_steps = opt.gradient_accumulation_steps
         # Following is used to split the batch to save space
-        # self.batch_size = int(opt.train_batch_size / opt.gradient_accumulation_steps)
+        self.batch_size = int(opt.train_batch_size / opt.gradient_accumulation_steps)
         self.batch_size = opt.train_batch_size
         self.device = device
         self.n_gpu = n_gpu
@@ -137,7 +137,7 @@ class TrainerBase:
         sampler = self.get_sampler(dataset)
         data_loader = self.get_data_loader(dataset, sampler)
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        # self.optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
         for epoch_id in trange(int(num_train_epochs), desc="Epoch"):
             for step, batch in enumerate(tqdm(data_loader, desc="Train-Batch Progress")):
@@ -146,17 +146,17 @@ class TrainerBase:
                 ''' loss '''
                 
                 loss = self.do_forward(batch, model, epoch_id, step)
-                optimizer.zero_grad()
+                # self.optimizer.zero_grad()
                 print(loss)
-                # loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
+                loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
                 loss.backward()
-                optimizer.step()
-                # model.zero_grad()
+                # self.optimizer.step()
+
                 ''' optimizer step '''
-                # global_step, model, is_nan, update_model = self.optimizer_step(step, model, global_step)
-                # if is_nan:  # FP16 TRAINING: Nan in gradients, reducing loss scaling
-                    # continue
-                # total_step += 1
+                global_step, model, is_nan, update_model = self.optimizer_step(step, model, global_step)
+                if is_nan:  # FP16 TRAINING: Nan in gradients, reducing loss scaling
+                    continue
+                total_step += 1
                 
                 '''
 
@@ -361,6 +361,7 @@ class TrainerBase:
             if self.opt.clip_grad > 0:
                 torch.nn.utils.clip_grad_value_(model.parameters(), self.opt.clip_grad)
             if self.opt.fp16 or self.opt.optimize_on_cpu:
+                
                 if self.opt.fp16 and self.opt.loss_scale != 1.0:
                     # scale down gradients for fp16 training
                     for param in model.parameters():

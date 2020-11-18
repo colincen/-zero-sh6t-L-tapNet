@@ -51,7 +51,9 @@ warmup_epoch=1
 
 train_batch_size_lst=(2)
 test_batch_size=4
-grad_acc=2
+
+grad_acc=1
+# grad_acc=2
 #grad_acc=4  # if the GPU-memory is not enough, use bigger gradient accumulate
 epoch=4
 

@@ -166,14 +166,15 @@ class SchemaSequenceLabeler(SequenceLabeler):
         :return:
         """
 
-        # print(logits.size())
-        # print(mask.size())
-        # print(targets.size())
 
         batch_size = logits.size(0)
 
         mask = mask.repeat(1, logits.size(1), 1)
         logits = masked_log_softmax(logits, mask, -1)
+
+        print(logits.argmax(-1))
+        print(targets)
+        print('-'*20)
 
         loss = logits.gather(dim=-1, index=targets.unsqueeze(-1))
 
