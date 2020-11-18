@@ -49,7 +49,7 @@ fix_embd_epoch_lst=(-1)
 warmup_epoch=1
 
 
-train_batch_size_lst=(16)
+train_batch_size_lst=(2)
 test_batch_size=4
 grad_acc=2
 #grad_acc=4  # if the GPU-memory is not enough, use bigger gradient accumulate
@@ -258,7 +258,7 @@ do
                                                             --label_trans_scale_r ${trans_scale_r} \
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
-                                                            --load_feature 
+                                                            # --load_feature 
                                                             # > /home_export/sh/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}

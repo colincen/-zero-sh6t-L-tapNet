@@ -501,16 +501,17 @@ class LabelEmbeddingSimilarityScorer(SimilarityScorerBase):
         # batch_size x label_size x val_num
 
 
-        no_pad_slot_vals_reps = torch.mean(no_pad_slot_vals_reps, -2)
-        # no_pad_slot_vals_reps = torch.div()
+        # no_pad_slot_vals_reps = torch.mean(no_pad_slot_vals_reps, -2)
+       
 
 
 
 
         sim_score_name = self.sim_func(token_reps, no_pad_slot_names_reps)
-        sim_score_val = self.sim_func(token_reps, no_pad_slot_vals_reps)
+        sim_score = sim_score_name
+        # sim_score_val = self.sim_func(token_reps, no_pad_slot_vals_reps)
 
-        sim_score = sim_score_name + sim_score_val
+        # sim_score = sim_score_name + sim_score_val
 
         # sim_score = self.mask_sim(sim_score, token_masks, pad_slot_names_mask)
 

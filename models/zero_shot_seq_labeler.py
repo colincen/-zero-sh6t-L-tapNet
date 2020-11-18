@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import torch
-from allennlp.nn.util import masked_softmax
+from allennlp.nn.util import masked_softmax, masked_log_softmax
 from typing import Tuple, List
 from models.modules.context_embedder_base import ContextEmbedderBase
 from models.modules.emission_scorer_base import EmissionScorerBase
@@ -62,20 +62,40 @@ class ZeroShotSeqLabeler(torch.nn.Module):
         # batch_size x label_size x val_num x emb_size
         # batch_size x label_size x val_num
 
-        logits = emission
+        # logits = emission
+
+        batch_size = token_ids.size(0)
 
         slot_names_mask = slot_names_mask.sum(-1)
         slot_names_mask = (slot_names_mask > 0)
         slot_names_mask = slot_names_mask.unsqueeze(-2)
 
         # print(slot_names_mask.size())
-        slot_names_mask = slot_names_mask.repeat(1, logits.size(1), 1)
-        print(slot_names_mask.size())
-        print(logits.size())
+        slot_names_mask = slot_names_mask.repeat(1, emission.size(1), 1)
+        # print(slot_names_mask.size())
+        # print(emission.size())
         
-        
-        # loss = masked_softmax(emission, )
+        # print(emission)
 
+        # print(slot_names_mask[0])
+        # print(slot_names_mask[1])
+        # print(slot_names_mask[2])
+        # print(slot_names_mask[3])
+
+
+        logits = masked_log_softmax(emission,slot_names_mask, -1)
+
+        # print(logits.argmax(-1))
+
+        print(token_ids)
+        print(label_ids)
+        print(logits.argmax(-1))
+        print('-'*20)
+
+        loss = logits.gather(dim=-1, index=label_ids.unsqueeze(-1))
+        return -1 * loss.sum() / batch_size
+        # print(logits.size())
+        # return loss
 
         # label_mask = (torch.zeros(label_ids.size(), device=label_ids.device).type_as(label_ids) == label_ids)
         # label_mask = (label_mask == 0)

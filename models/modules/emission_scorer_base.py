@@ -296,23 +296,23 @@ class LabelEmbeddingEmissionScorer(EmissionScorerBase):
         # print(pad_slot_vals_mask.size())
         # print('-'*20)
 
-        # fwd_token_reps, bcw_token_reps = torch.split(token_reps, int(token_reps.size(-1) /2), -1)
+        fwd_token_reps, bcw_token_reps = torch.split(token_reps, int(token_reps.size(-1) /2), -1)
         
-        similarity = self.similarity_scorer(token_reps, token_masks, pad_slot_names_reps, pad_slot_names_mask,\
-                                            pad_slot_vals_reps, pad_slot_vals_mask)
+        # similarity = self.similarity_scorer(token_reps, token_masks, pad_slot_names_reps, pad_slot_names_mask,\
+        #                                     pad_slot_vals_reps, pad_slot_vals_mask)
 
-        # fwd_similarity = self.similarity_scorer(fwd_token_reps, token_masks, pad_slot_names_reps, \
-        #                                     pad_slot_names_mask, pad_slot_vals_reps, 
-        #                                     pad_slot_vals_mask)
+        fwd_similarity = self.similarity_scorer(fwd_token_reps, token_masks, pad_slot_names_reps, \
+                                            pad_slot_names_mask, pad_slot_vals_reps, 
+                                            pad_slot_vals_mask)
 
-        # bcw_similarity = self.similarity_scorer(bcw_token_reps, token_masks, pad_slot_names_reps, \
-        #                                     pad_slot_names_mask, pad_slot_vals_reps, 
-        #                                     pad_slot_vals_mask)
+        bcw_similarity = self.similarity_scorer(bcw_token_reps, token_masks, pad_slot_names_reps, \
+                                            pad_slot_names_mask, pad_slot_vals_reps, 
+                                            pad_slot_vals_mask)
 
-        # similarity = fwd_similarity + bcw_similarity
+        similarity = fwd_similarity + bcw_similarity
 
         emission = similarity
 
-        emission = self.scaler(similarity, p = 3, dim=-1)    
+        # emission = self.scaler(similarity, p = 3, dim=-1)    
 
         return emission
