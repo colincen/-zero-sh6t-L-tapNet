@@ -572,7 +572,7 @@ class NormalInputBuilderForZeroShot(object):
             slot_vals=torch.LongTensor(slot_vals),
             slot_vals_mask=torch.LongTensor(slot_vals_mask)
         )
-        return ret
+        return ret, example.input_item
 
     def prepare_utterance(self, seq_in):
         utterance = self.tokenizer.convert_tokens_to_ids(seq_in)
@@ -779,10 +779,12 @@ class ZeroShotFeature(object):
         gid,
         modelInput,
         label_ids,
+        data_item,
     ):
         self.gid = gid
         self.modelInput = modelInput
         self.label_ids = label_ids
+        self.data_item = data_item
 
     # def _label_ids(self):
     #     return self.label_ids
@@ -844,14 +846,16 @@ class ZeroShotFeatureConstructor:
         example,
         label2id,
     ):
-        Input = self.input_builder(example, label2id, max_val_len = 10)
+        Input, data_item = self.input_builder(example, label2id, max_val_len = 10)
 
         Output = self.output_builder(example, label2id)
 
         ret = ZeroShotFeature(
             gid=example.gid,
             modelInput=Input,
-            label_ids=Output
+            label_ids=Output,
+            data_item=data_item
+
         )
 
         return ret

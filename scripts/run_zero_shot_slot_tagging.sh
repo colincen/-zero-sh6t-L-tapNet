@@ -32,8 +32,8 @@ cross_data_id_lst=(1 2 3 4 5 6 7)  # for snips
 seed_lst=(10150 10151 10152 10153 10154 10155 10156 10157 10158 10159)
 
 #lr_lst=(0.000001 0.000005 0.00005)
-lr_lst=(0.00001)
-
+# lr_lst=(0.00001)
+lr_lst=(0.001)
 clip_grad=5
 
 decay_lr_lst=(0.5)
@@ -45,17 +45,17 @@ upper_lr_lst=(0.001)
 fix_embd_epoch_lst=(-1)
 #fix_embd_epoch_lst=(1 2)
 
-#warmup_epoch=-1
-warmup_epoch=1
+warmup_epoch=-1
+# warmup_epoch=1
 
 
-train_batch_size_lst=(2)
-test_batch_size=4
+train_batch_size_lst=(16)
+test_batch_size=16
 
 grad_acc=1
 # grad_acc=2
 #grad_acc=4  # if the GPU-memory is not enough, use bigger gradient accumulate
-epoch=4
+epoch=10
 
 # ==== model setting =========
 # ---- encoder setting -----
@@ -260,7 +260,7 @@ do
                                                             --label_trans_scale_r ${trans_scale_r} \
                                                             -lt_nm ${label_trans_normalizer} \
                                                             ${mask_trans} \
-                                                            # --load_feature 
+                                                            --load_feature 
                                                             # > /home_export/sh/result/${model_name}.DATA.${file_mark}.log
                                                         echo [CLI]
                                                         echo Model: ${model_name}

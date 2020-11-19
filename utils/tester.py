@@ -12,8 +12,8 @@ from tqdm import tqdm, trange
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 # My Staff
-from utils.iter_helper import PadCollate, FewShotDataset
-from utils.preprocessor import FewShotFeature, ModelInput
+from utils.iter_helper import PadCollate, FewShotDataset, ZeroShotDataset
+from utils.preprocessor import FewShotFeature, ModelInput, ZeroShotFeature
 from utils.device_helper import prepare_model
 from utils.model_helper import make_model, load_model
 from models.modules.transition_scorer import FewShotTransitionScorer
@@ -63,6 +63,10 @@ class TesterBase:
             batch = tuple(t.to(self.device) for t in batch)  # multi-gpu does scattering it-self
             with torch.no_grad():
                 predictions = self.do_forward(batch, model)
+
+                
+
+
             for i, feature_gid in enumerate(batch[0]):  # iter over feature global id
                 prediction = predictions[i]
                 feature = test_features[feature_gid.item()]
@@ -416,6 +420,115 @@ class SchemaFewShotTester(FewShotTester):
             label_nwp_index,
             label_input_mask,
             label_output_mask,
+        )
+        return prediction
+
+
+
+class SchemaZeroShotTester(FewShotTester):
+    def __init__(self, opt, device, n_gpu):
+        super(SchemaZeroShotTester, self).__init__(opt, device, n_gpu)
+
+    def get_data_loader(self, features):
+        """ add label index into special padding """
+        dataset =ZeroShotDataset([self.unpack_feature(f) for f in features])
+        if self.opt.local_rank == -1:
+            sampler = SequentialSampler(dataset)
+        else:
+            sampler = DistributedSampler(dataset)
+        pad_collate = PadCollate(dim=-1) 
+        data_loader = DataLoader(dataset, sampler=sampler, batch_size=self.batch_size , collate_fn=pad_collate)
+        return data_loader
+
+    def reform_zero_shot_batch(self, all_results: List[RawResult]) -> List[List[Tuple[int, RawResult]]]:
+        """
+        Our result score is average score of all few-shot batches.
+        So here, we classify all result according to few-shot batch id.
+        """
+        all_batches = {}
+        for result in all_results:
+
+            b_id = result.feature.gid
+            if b_id not in all_batches:
+                all_batches[b_id] = [result]
+            else:
+                all_batches[b_id].append(result)
+        return sorted(all_batches.items(), key=lambda x: x[0])
+    
+    def eval_predictions(self, all_results: List[RawResult], id2label: dict, log_mark: str) -> float:
+        """ Our result score is average score of all few-shot batches. """
+        all_batches = self.reform_zero_shot_batch(all_results)
+        all_scores = []
+        for b_id, fs_batch in all_batches:
+            f1 = self.eval_one_zero_shot_batch(b_id, fs_batch, id2label, log_mark)
+            all_scores.append(f1)
+        return sum(all_scores) * 1.0 / len(all_scores)
+
+    def eval_one_zero_shot_batch(self, b_id, fs_batch: List[RawResult], id2label: dict, log_mark: str) -> float:
+        pred_file_name = '{}.txt'.format(log_mark)
+        output_prediction_file = os.path.join(self.opt.output_dir, pred_file_name)
+        if self.opt.task == 'zero-shot':
+            self.writing_zeroshot_prediction(fs_batch, output_prediction_file, id2label)
+            precision, recall, f1 = self.eval_with_script(output_prediction_file)
+        else:
+            raise ValueError("Wrong task.")
+        return f1
+    
+    def writing_zeroshot_prediction(self, fs_batch: List[RawResult], output_prediction_file: str, id2label: dict):
+        writing_content = []
+        for result in fs_batch:
+            prediction = result.prediction
+            feature = result.feature
+
+            pred_ids = prediction  # prediction is directly the predict ids
+            if len(pred_ids) != len(feature.modelInput.token_ids):
+                raise RuntimeError("Failed to align the pred_ids to texts: {},{} \n{},{} \n{},{}".format(
+                    len(pred_ids), pred_ids,
+                    len(feature.modelInput.token_ids), feature.data_item.seq_in,
+                    len(feature.label_ids), feature.data_item.seq_out
+                ))
+            for pred_id, word, true_label in zip(pred_ids, feature.data_item.seq_in, feature.data_item.seq_out):
+                pred_label = id2label[pred_id]
+                writing_content.append('{0} {1} {2}'.format(word, true_label, pred_label))
+            writing_content.append('')
+        with open(output_prediction_file, "a+") as writer:
+            writer.write('\n'.join(writing_content))
+
+    def unpack_feature(self, feature: ZeroShotFeature) -> List[torch.Tensor]:
+        ret = [
+            torch.LongTensor([feature.gid]),
+            # test
+            feature.modelInput.token_ids,
+            feature.modelInput.slot_names,
+            feature.modelInput.slot_names_mask,
+            feature.modelInput.slot_vals,
+            feature.modelInput.slot_vals_mask,
+            # feature.modelInput,
+            feature.label_ids,
+        ]
+        return ret
+
+    def do_forward(self, batch, model):
+        (
+            gid,  # 0
+            token_ids,  # 1
+            slot_names,
+            slot_names_mask,
+            slot_vals,
+            slot_vals_mask,
+            # label feature
+            label_ids,
+        ) = batch
+
+
+
+        prediction = model(
+            token_ids,
+            slot_names,
+            slot_names_mask,
+            slot_vals,
+            slot_vals_mask,
+            label_ids,
         )
         return prediction
 

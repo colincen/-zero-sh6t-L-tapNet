@@ -71,7 +71,7 @@ class TrainerBase:
         self.gradient_accumulation_steps = opt.gradient_accumulation_steps
         # Following is used to split the batch to save space
         self.batch_size = int(opt.train_batch_size / opt.gradient_accumulation_steps)
-        self.batch_size = opt.train_batch_size
+        # self.batch_size = opt.train_batch_size
         self.device = device
         self.n_gpu = n_gpu
 
@@ -147,7 +147,7 @@ class TrainerBase:
                 
                 loss = self.do_forward(batch, model, epoch_id, step)
                 # self.optimizer.zero_grad()
-                print(loss)
+                # print(loss)
                 loss = self.process_special_loss(loss)  # for parallel process, split batch and so on
                 loss.backward()
                 # self.optimizer.step()
@@ -158,11 +158,10 @@ class TrainerBase:
                     continue
                 total_step += 1
                 
-                '''
+               
 
                 
                 if self.time_to_make_check_point(total_step, data_loader):
-                    return 0,0,0
                     if self.tester and self.opt.eval_when_train:  # this is not suit for training big model
                         print("Start dev eval.")
                         dev_score, test_score, copied_best_model = self.model_selection(
@@ -200,14 +199,18 @@ class TrainerBase:
                     break
             if is_convergence:
                 break
-                '''
+               
             print(" --- The {} epoch Finish --- ".format(epoch_id))
 
         return best_model_now, best_dev_score_now, test_score
 
     def time_to_make_check_point(self, step, data_loader):
         interval_size = int(len(data_loader) / self.opt.cpt_per_epoch)
+        # print(interval_size)
         remained_step = len(data_loader) - (step % len(data_loader))  # remained step for current epoch
+        # print(remained_step)
+
+        # print((step % interval_size == 0 < interval_size <= remained_step) or (step % len(data_loader) == 0))
         return (step % interval_size == 0 < interval_size <= remained_step) or (step % len(data_loader) == 0)
 
     def get_dataset(self, features):
@@ -515,6 +518,7 @@ class FewShotTrainer(TrainerBase):
 
 
 class SchemaFewShotTrainer(FewShotTrainer):
+    
     def __init__(self, opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester=None):
         super(SchemaFewShotTrainer, self).__init__(opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester)
 

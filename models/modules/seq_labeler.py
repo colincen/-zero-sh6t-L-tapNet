@@ -172,9 +172,9 @@ class SchemaSequenceLabeler(SequenceLabeler):
         mask = mask.repeat(1, logits.size(1), 1)
         logits = masked_log_softmax(logits, mask, -1)
 
-        print(logits.argmax(-1))
-        print(targets)
-        print('-'*20)
+        # print(logits.argmax(-1))
+        # print(targets)
+        # print('-'*20)
 
         loss = logits.gather(dim=-1, index=targets.unsqueeze(-1))
 

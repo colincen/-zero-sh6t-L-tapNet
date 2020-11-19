@@ -15,7 +15,7 @@ from utils.preprocessor import FeatureConstructor, BertInputBuilder, FewShotOutp
 from utils.opt import define_args, basic_args, train_args, test_args, preprocess_args, model_args, option_check
 from utils.device_helper import prepare_model, set_device_environment
 from utils.trainer import FewShotTrainer, SchemaFewShotTrainer, prepare_optimizer, SchemaZeroShotTrainer
-# from utils.tester import FewShotTester, SchemaFewShotTester, eval_check_points
+from utils.tester import FewShotTester, SchemaFewShotTester, eval_check_points, SchemaZeroShotTester
 from utils.model_helper import make_model, load_model
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -81,7 +81,7 @@ def main():
     parser = define_args(parser, basic_args, train_args, test_args, preprocess_args, model_args)
     opt = parser.parse_args()
     # print('Args:\n', json.dumps(vars(opt), indent=2))
-    opt = option_check(opt)
+    # opt = option_check(opt)
 
     ''' device & environment '''
     device, n_gpu = set_device_environment(opt)
@@ -135,7 +135,7 @@ def main():
 
     ''' select training & testing mode '''
     trainer_class = SchemaZeroShotTrainer 
-    # tester_class = SchemaZeroShotTester 
+    tester_class = SchemaZeroShotTester 
 
 
 
@@ -160,8 +160,8 @@ def main():
     #         'backoff', 'scale_rate', 'f_theta', 'phi', 'start_reps', 'end_reps', 'biaffine']
         param_to_optimize, optimizer, scheduler = prepare_optimizer(
             opt, training_model, len(train_features))
-    #     tester = tester_class(opt, device, n_gpu)
-        trainer = trainer_class(opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester=None)
+        tester = tester_class(opt, device, n_gpu)
+        trainer = trainer_class(opt, optimizer, scheduler, param_to_optimize, device, n_gpu, tester=tester)
     #     if opt.warmup_epoch > 0:
     #         training_model.no_embedder_grad = True
     #         stage_1_param_to_optimize, stage_1_optimizer, stage_1_scheduler = prepare_optimizer(
@@ -177,11 +177,11 @@ def main():
             dev_features, dev_id2label, test_features, test_id2label, best_dev_score_now=0)
 
     #     # decide the best model
-    #     if not opt.eval_when_train:  # select best among check points
-    #         best_model, best_score, test_score_then = trainer.select_model_from_check_point(
-    #             train_id2label, dev_features, dev_id2label, test_features, test_id2label, rm_cpt=opt.delete_checkpoint)
-    #     else:  # best model is selected during training
-    #         best_model = trained_model
+        if not opt.eval_when_train:  # select best among check points
+            best_model, best_score, test_score_then = trainer.select_model_from_check_point(
+                train_id2label, dev_features, dev_id2label, test_features, test_id2label, rm_cpt=opt.delete_checkpoint)
+        else:  # best model is selected during training
+            best_model = trained_model
     #     logger.info('dev:{}, test:{}'.format(best_dev_score, test_score))
     #     print('dev:{}, test:{}'.format(best_dev_score, test_score))
 
