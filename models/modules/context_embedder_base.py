@@ -358,7 +358,7 @@ class NormalContextEmbedder(ContextEmbedderBase):
             # if word in embedding_dict.stoi:
             if word in embedding_dict:
                 word_in_dict += 1
-            self.embedding_layer.weight.data[idx] = embedding_dict[word]
+                self.embedding_layer.weight.data[idx] = embedding_dict[word]
         
         import json
         f = open('dict.json', 'w')
@@ -473,6 +473,11 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         slot_names_length = slot_names_length[domain_slot_names_index]
         
 
+
+
+        # print((slot_names_length == 1).long().sum())
+
+        # print('-'*20)
         slot_names_reps = self.embedding_layer(slot_names_merge)
         #############################
         ## lstm or embedding
@@ -510,6 +515,7 @@ class BilstmContextEmbedder(NormalContextEmbedder):
         
         pad_slot_names_reps = pad_slot_names_reps.view(batch_size, label_size, -1)
         pad_slot_names_mask = pad_slot_names_mask.view(batch_size, label_size)
+
         
 
 

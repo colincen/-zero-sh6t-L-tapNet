@@ -80,7 +80,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser = define_args(parser, basic_args, train_args, test_args, preprocess_args, model_args)
     opt = parser.parse_args()
-    # print('Args:\n', json.dumps(vars(opt), indent=2))
+    print('Args:\n', json.dumps(vars(opt), indent=2))
     # opt = option_check(opt)
 
     ''' device & environment '''

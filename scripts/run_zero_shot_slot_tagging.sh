@@ -21,6 +21,7 @@ support_shots_lst=(1)  # 1-shot
 data_batch_size=20
 word_piece_data=True
 
+eval_when_train=True
 
 # Cross evaluation's data
 #cross_data_id_lst=(1)  # for debug
@@ -55,7 +56,7 @@ test_batch_size=16
 grad_acc=1
 # grad_acc=2
 #grad_acc=4  # if the GPU-memory is not enough, use bigger gradient accumulate
-epoch=10
+epoch=20
 
 # ==== model setting =========
 # ---- encoder setting -----
@@ -218,8 +219,9 @@ do
                                                             --bert_path ${bert_base_uncased} \
                                                             --bert_vocab ${bert_base_uncased_vocab} \
                                                             --train_batch_size ${train_batch_size} \
-                                                            --cpt_per_epoch 4 \
+                                                            --cpt_per_epoch 8 \
                                                             --delete_checkpoint \
+                                                            --eval_when_train \
                                                             --gradient_accumulation_steps ${grad_acc} \
                                                             --num_train_epochs ${epoch} \
                                                             --learning_rate ${lr} \

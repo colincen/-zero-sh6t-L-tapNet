@@ -179,7 +179,7 @@ class TrainerBase:
                 
                 loss_now = loss.item() if update_model else loss.item() + loss_now
                 if self.opt.convergence_window > 0 and update_model:
-                    if global_step % 100 == 0 or total_step % len(data_loader) == 0:
+                    if global_step % 50 == 0 or total_step % len(data_loader) == 0:
                         print('Current loss {}, global step {}, min loss now {}, no loss decay step {}'.format(
                             loss_now, global_step, min_loss, no_loss_decay_steps))
                     if loss_now < min_loss:

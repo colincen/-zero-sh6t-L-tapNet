@@ -16,6 +16,7 @@ from utils.iter_helper import PadCollate, FewShotDataset, ZeroShotDataset
 from utils.preprocessor import FewShotFeature, ModelInput, ZeroShotFeature
 from utils.device_helper import prepare_model
 from utils.model_helper import make_model, load_model
+from utils.conll import evaluate
 from models.modules.transition_scorer import FewShotTransitionScorer
 from models.few_shot_seq_labeler import FewShotSeqLabeler
 
@@ -59,6 +60,9 @@ class TesterBase:
         model.eval()
         data_loader = self.get_data_loader(test_features)
 
+        pred=[]
+        gold=[]
+
         for batch in tqdm(data_loader, desc="Eval-Batch Progress"):
             batch = tuple(t.to(self.device) for t in batch)  # multi-gpu does scattering it-self
             with torch.no_grad():
@@ -71,6 +75,11 @@ class TesterBase:
                 prediction = predictions[i]
                 feature = test_features[feature_gid.item()]
                 all_results.append(RawResult(feature=feature, prediction=prediction))
+
+                pred.extend(prediction)
+                gold.extend(feature.label_ids)
+                assert len(pred) == len(gold)
+
                 if model.emb_log:
                     model.emb_log.write('text_' + str(feature_gid.item()) + '\t'
                                         + '\t'.join(feature.test_feature_item.data_item.seq_in) + '\n')
@@ -79,8 +88,17 @@ class TesterBase:
         if model.emb_log:
             model.emb_log.close()
 
-        scores = self.eval_predictions(all_results, id2label, log_mark)
-        return scores
+
+        gold = [id2label[num.item()] for num in gold]
+        pred = [id2label[num] for num in pred]
+
+
+        prec, rec, f1 = evaluate(gold, pred)
+        return f1
+
+
+        # scores = self.eval_predictions(all_results, id2label, log_mark)
+        # return scores
 
     def get_data_loader(self, features):
         dataset = TensorDataset([self.unpack_feature(f) for f in features])
@@ -431,7 +449,7 @@ class SchemaZeroShotTester(FewShotTester):
 
     def get_data_loader(self, features):
         """ add label index into special padding """
-        dataset =ZeroShotDataset([self.unpack_feature(f) for f in features])
+        dataset = ZeroShotDataset([self.unpack_feature(f) for f in features])
         if self.opt.local_rank == -1:
             sampler = SequentialSampler(dataset)
         else:
@@ -447,7 +465,6 @@ class SchemaZeroShotTester(FewShotTester):
         """
         all_batches = {}
         for result in all_results:
-
             b_id = result.feature.gid
             if b_id not in all_batches:
                 all_batches[b_id] = [result]

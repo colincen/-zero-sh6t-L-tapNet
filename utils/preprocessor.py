@@ -601,7 +601,18 @@ class NormalInputBuilderForZeroShot(object):
 
         res_slot_names_ids = []
         for i in res_slot_names:
+            # t1 = 0
+            # t2 = 0
+            # while t1 < len(i) and i[t1] != '[PAD]':
+            #     t1 += 1
             temp = self.tokenizer.convert_tokens_to_ids(i)
+            # while t2 < len(temp) and temp[t2] != 0:
+            #     t2 += 1
+            # if t1 != t2:
+            #     print(i)
+            #     print(temp)
+
+            #     print('-'*10)
             res_slot_names_ids.append(temp)
 
         # print(res_slot_names)
@@ -706,7 +717,9 @@ class NormalInputBuilderForZeroShot(object):
                              # toursg data
                              ("ACK", "acknowledgment, as well as common expressions used for grounding"),
                              ("poi", "point of information"),
-                             # ("CANCEL", "cancelation"),
+                             ("timeRange", "time range"),
+                             ("timerange", "time range"),
+                            #  ("CANCEL", "cancelation"),
                              # ("CLOSING", "closing remarks"),
                              # ("COMMIT", "commitment"),
                              # ("CONFIRM", "confirmation"),
@@ -957,10 +970,17 @@ def make_word_dict(all_files: List[str]) -> (Dict[str, int], Dict[int, str]):
                 # print(line)
                 all_words.extend(line)
             for line in raw_data['slots']:
-                all_words.extend(line)
+                for k in line:
+                    temp = k = k.split('_')
+                    # print(temp)
+                    all_words.extend(temp)
+                
+            
             all_words.append('begin')
             all_words.append('inner')
             all_words.append('ordinary')
+            all_words.append('time')
+            all_words.append('range')
             word_set = sorted(list(set(all_words)))  # sort to make embedding id fixed
             
     
